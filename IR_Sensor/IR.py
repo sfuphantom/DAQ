@@ -19,12 +19,12 @@ chan = AnalogIn(ads, ADS.P0)
 # Create differential input between channel 0 and 1
 # chan = AnalogIn(ads, ADS.P0, ADS.P1)
 
-print("{:>5}\t{:>5}\t{:>5}\t{:>5}".format("raw", "v", "Adjusted mV", "Temp"))
+print("{:>4}\t{:>3}\t".format("V", "Temp"))
 
 while True:
 
         # Subtracting the reference voltage (0.97V)
-        chan.Vref = chan.voltage - 1.0
+        chan.Vref = chan.voltage - 1.01
         # print("Vref:", chan.Vref)
 
         # Divide by the amplification (101)
@@ -72,8 +72,8 @@ while True:
         temps = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50,
         55, 60, 65, 70, 75, 80, 85, 90, 95, 100]
 
-        Fvolt = chan.Vmv
+        Fvolt = chan.TC
         temps = lookup(Fvolt, volts, temps)
 
-        print("CHAN 0: "+"{:>5}\t{:>5.3f}\t{:>5.3f}\t{:>5.3f}".format(chan.value, chan.voltage, chan.Vmv, temps))
+        print("{:>5.3f}\t{:>5.3f}".format(chan.TC, temps))
         time.sleep(0.5)
