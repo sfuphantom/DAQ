@@ -19,7 +19,7 @@ chan = AnalogIn(ads, ADS.P0)
 # Create differential input between channel 0 and 1
 # chan = AnalogIn(ads, ADS.P0, ADS.P1)
 
-print("{:>5}\t{:>5}\t{:>5}".format("raw", "v", "distance"))
+print("{:>3}\t{:>3}\t{:>2}".format("raw", "v", "distance"))
 
 while True:
         ads.gain = 2/3
@@ -53,5 +53,5 @@ while True:
         Fvolt = chan.voltage
         distance = lookup(Fvolt, volts, distances)
 
-        print("CHAN 0: "+"{:>5}\t{:>5.3f}\t{:>5.3f}".format(chan.value, chan.voltage, distance))
+        print("{:>5}\t{:>5.3f}\t{:>5.3f}".format(chan.value, chan.voltage, distance))
         time.sleep(0.5)
