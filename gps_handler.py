@@ -21,14 +21,14 @@ class gps_handler(object):
         while True:
             next(self._gpsd)
 
-    def gps_thread():
+    def gps_thread(self):
         while True:
             dt = datetime.utcnow()
             gps_data = {
-                "lat": gpsd.fix.latitude,
-                "lon": gpsd.fix.longitude,
-                "altHAE": gpsd.fix.altHAE,
-                "speed": gpsd.fix.speed,
+                "lat": self._gpsd.fix.latitude,
+                "lon": self._gpsd.fix.longitude,
+                "alt": self._gpsd.fix.altHAE,
+                "speed": self._gpsd.fix.speed,
             }
             self._controller.data_queue.put((dt, "gps", gps_data))
             sleep(1)
