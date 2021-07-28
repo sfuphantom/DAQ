@@ -27,8 +27,9 @@ class gps_handler(object):
             gps_data = {
                 "lat": self._gpsd.fix.latitude,
                 "lon": self._gpsd.fix.longitude,
-                "alt": self._gpsd.fix.altHAE,
+                "alt": self._gpsd.fix.altitude,
                 "speed": self._gpsd.fix.speed,
+                "satellites": self._gpsd.satellites,
             }
             self._controller.data_queue.put((dt, "gps", gps_data))
             sleep(1)
