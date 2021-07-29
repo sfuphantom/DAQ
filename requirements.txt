@@ -1,0 +1,5 @@
+Adafruit-Blinka
+adafruit-circuitpython-lsm6ds
+adafruit-circuitpython-ads1x15
+gps
+RPi.GPIO
