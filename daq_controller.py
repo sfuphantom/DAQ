@@ -8,28 +8,42 @@ from query import insertRecord
 # Objects
 from i2c_handler import i2c_handler
 from gps_handler import gps_handler
+from mqtt_handler import *
+from daq_controller_tester import *
 
 # Temperature Calculation
 from bisect import bisect_left
 
 LOCATION = "Pi"
 DASHBOARD_NAME = "Test"
+MQTT_BROKER_IP = "localhost"
 
 class daq_controller(object):
-    def __init__(self):
+    def __init__(self, testmode=False):
         self.data_queue = Queue()
 
-        self._i2c = i2c_handler(self)
-        self._gps = gps_handler(self)
+        if testmode == False:
+            self._i2c = i2c_handler(self)
+            self._gps = gps_handler(self)
+        else:
+            daq_tester = DaqTester(self)
+            print("Test mode engaged")
+
+        self.mqtt = MqttHandler(DASHBOARD_NAME, MQTT_BROKER_IP)
 
 def main():
-    controller = daq_controller()
+    controller = daq_controller(testmode=True)
 
     while True:
         if controller.data_queue.qsize() > 0:
             dt, sensor, data = controller.data_queue.get()
             if sensor == "gps":
                 value = json.dumps(data, separators=(',', ':'))
+                controller.mqtt.client.publish(MQTT_PUB_TOPICS['GPS_TOPIC'],
+                                  payload=value,
+                                  qos=2,
+                                  retain=False)
+
             elif sensor == "imu":
                 a, g = data
                 data_dict = {
@@ -41,14 +55,30 @@ def main():
                     "gz": g[2],
                 }
                 value = json.dumps(data_dict, separators=(',', ':'))
+                controller.mqtt.client.publish(MQTT_PUB_TOPICS['IMU_TOPIC'],
+                                  payload=value,
+                                  qos=2,
+                                  retain=False)
+
             elif sensor == "shock_travel":
                 data_dict = {"shock_travel": list(map(shock_travel_convert, data))}
                 value = json.dumps(data_dict, separators=(',', ':'))
+                controller.mqtt.client.publish(MQTT_PUB_TOPICS['SHOCK_TRAVEL_TOPIC'],
+                                  payload=value,
+                                  qos=2,
+                                  retain=False)
+
             elif sensor == "ir_temperature":
                 data_dict = {"temperatures": list(map(ir_temperature_convert, data))}
                 value = json.dumps(data_dict, separators=(',', ':'))
+                controller.mqtt.client.publish(MQTT_PUB_TOPICS['IR_TEMPERATURE_TOPIC'],
+                                  payload=value,
+                                  qos=2,
+                                  retain=False)
+
             insertRecord(dt, LOCATION, DASHBOARD_NAME, sensor, value)
-            #print(dt, LOCATION, DASHBOARD_NAME, sensor, value)
+            print(dt, LOCATION, DASHBOARD_NAME, sensor, value)
+
         else:
             sleep(0.01)
 
