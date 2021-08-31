@@ -12,7 +12,7 @@ MQTT_PUB_TOPICS = {
 }
 
 # Shutdown Topic
-MQTT_SIM_SUB_TOPICS = {
+MQTT_SUB_TOPICS = {
     "SHUTDOWN_TOPIC": "commands/shutdown"
 }
 
@@ -84,8 +84,8 @@ class MqttHandler():
 
         # Subscribing in on_connect() means that if we lose the connection and
         # reconnect then subscriptions will be renewed.
-        for key in MQTT_SIM_SUB_TOPICS.keys():
-            client.subscribe(MQTT_SIM_SUB_TOPICS[key])
+        for key in MQTT_SUB_TOPICS.keys():
+            client.subscribe(MQTT_SUB_TOPICS[key])
 
     def __on_message(self, client, userdata, msg):
         """Called automatically to notify if client disconnects from broker
@@ -104,7 +104,7 @@ class MqttHandler():
             topic = msg.topic
             data = msg.payload
 
-            if topic == MQTT_SIM_SUB_TOPICS['SHUTDOWN_TOPIC']:
+            if topic == MQTT_SUB_TOPICS['SHUTDOWN_TOPIC']:
                 self.__setShutdownPin(1)
             else:
                 print("Invalid topic " + msg.topic)
