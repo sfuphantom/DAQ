@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: MIT
 
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+# FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS
+# OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+# WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
+# OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
 """
 `adafruit_lsm6ds`
 ================================================================================
@@ -60,7 +67,7 @@ from math import radians
 from micropython import const
 import adafruit_bus_device.i2c_device as i2c_device
 
-from adafruit_register.i2c_struct import ROUnaryStruct, Struct, UnaryStruct
+from adafruit_register.i2c_struct import ROUnaryStruct, Struct
 from adafruit_register.i2c_bits import RWBits
 from adafruit_register.i2c_bit import RWBit
 
@@ -145,6 +152,7 @@ _LSM6DS_OUTX_L_G = const(0x22)
 _LSM6DS_OUTX_L_A = const(0x28)
 _LSM6DS_STEP_COUNTER = const(0x4B)
 _LSM6DS_TAP_CFG = const(0x58)
+_LSM6DS_WAKE_UP_DUR = const(0x5C)
 
 # FIFO Operational Registers
 _LSM6DS_FIFO_CTRL1 = const(0x06)
@@ -215,26 +223,33 @@ class LSM6DS:  # pylint: disable=too-many-instance-attributes
     _pedometer_reset = RWBit(_LSM6DS_CTRL10_C, 1)
     _func_enable = RWBit(_LSM6DS_CTRL10_C, 2)
     _ped_enable = RWBit(_LSM6DS_TAP_CFG, 6)
+    _timestamp_enable = RWBit(_LSM6DS_TAP_CFG, 7)
+    _timestamp_resolution = RWBit(_LSM6DS_WAKE_UP_DUR, 4)
+    _timestamp_reg2 = RWBits(8, _LSM6DS_TIMESTAMP2_REG, 0)
+    pedometer_steps = ROUnaryStruct(_LSM6DS_STEP_COUNTER, "<h")
+    """The number of steps detected by the pedometer. You must enable with `pedometer_enable`
+    before calling. Use `pedometer_reset` to reset the number of steps"""
+    CHIP_ID = None
+
 
     # FIFO RWBits:
     _fifo_threshold_l = RWBits(8, _LSM6DS_FIFO_CTRL1, 0)
     _fifo_threshold_h = RWBits(4, _LSM6DS_FIFO_CTRL2, 0)
     _gyro_fifo_dec = RWBits(3, _LSM6DS_FIFO_CTRL3, 0)
     _accel_fifo_dec = RWBits(3, _LSM6DS_FIFO_CTRL3, 3)
+    _timer_fifo_dec = RWBits(3, _LSM6DS_FIFO_CTRL4, 3)
     _fifo_mode = RWBits(3, _LSM6DS_FIFO_CTRL5, 0)
     _fifo_data_rate = RWBits(4, _LSM6DS_FIFO_CTRL5, 4)
     _int1_full_set = RWBit(_LSM6DS_INT1_CTRL, 3)
+    _fifo_timestamp_en = RWBit(_LSM6DS_FIFO_CTRL2, 7)
 
     _raw_fifo_data = Struct(_LSM6DS_FIFO_DATA_OUT_L, "<h")
-    _fifo_timestamp = Struct(_LSM6DS_TIMESTAMP0_REG, "<hhh")
+    _fifo_timestamp = Struct(_LSM6DS_TIMESTAMP2_REG, "<hhh")
     _fifo_status1 = ROUnaryStruct(_LSM6DS_FIFO_STATUS1, "<B")
     _fifo_status2 = ROUnaryStruct(_LSM6DS_FIFO_STATUS2, "<B")
     _fifo_status3 = ROUnaryStruct(_LSM6DS_FIFO_STATUS3, "<B")
+    _fifo_status4 = ROUnaryStruct(_LSM6DS_FIFO_STATUS4, "<B")
 
-    pedometer_steps = ROUnaryStruct(_LSM6DS_STEP_COUNTER, "<h")
-    """The number of steps detected by the pedometer. You must enable with `pedometer_enable`
-    before calling. Use `pedometer_reset` to reset the number of steps"""
-    CHIP_ID = None
 
     def __init__(self, i2c_bus, address=LSM6DS_DEFAULT_ADDRESS):
         self._cached_accel_range = None
@@ -258,18 +273,6 @@ class LSM6DS:  # pylint: disable=too-many-instance-attributes
 
         self.accelerometer_range = AccelRange.RANGE_4G  # pylint: disable=no-member
         self.gyro_range = GyroRange.RANGE_250_DPS  # pylint: disable=no-member
-
-        # FIFO Config
-        self._fifo_threshold_l = 0xA0
-        self._fifo_threshold_h = 0x0F
-        self._gyro_fifo_dec = 1
-        self._accel_fifo_dec = 1
-        self._fifo_mode = 0
-        self._fifo_mode = 6
-
-        self._fifo_data_rate = 3
-        self._int1_full_set = True
-
 
     def reset(self):
         "Resets the sensor's configuration into an initial state"

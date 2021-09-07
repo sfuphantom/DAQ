@@ -18,6 +18,11 @@ LOCATION = "Pi"
 DASHBOARD_NAME = "Test"
 MQTT_BROKER_IP = "localhost"
 
+logging.basicConfig(level=logging.NOTSET)
+
+logger = logging.getLogger(__name__)  
+logger.setLevel(logging.WARNING)
+
 class daq_controller(object):
     def __init__(self, testmode=False):
         self.data_queue = Queue()
@@ -32,7 +37,7 @@ class daq_controller(object):
         self.mqtt = MqttHandler(DASHBOARD_NAME, MQTT_BROKER_IP)
 
 def main():
-    controller = daq_controller(testmode=True)
+    controller = daq_controller(testmode=False)
 
     while True:
         if controller.data_queue.qsize() > 0:
@@ -45,16 +50,7 @@ def main():
                                   retain=False)
 
             elif sensor == "imu":
-                a, g = data
-                data_dict = {
-                    "ax": a[0],
-                    "ay": a[1],
-                    "az": a[2],
-                    "gx": g[0],
-                    "gy": g[1],
-                    "gz": g[2],
-                }
-                value = json.dumps(data_dict, separators=(',', ':'))
+                value = json.dumps(data, separators=(',', ':'))
                 controller.mqtt.client.publish(MQTT_PUB_TOPICS['IMU_TOPIC'],
                                   payload=value,
                                   qos=2,
@@ -77,7 +73,7 @@ def main():
                                   retain=False)
 
             insertRecord(dt, LOCATION, DASHBOARD_NAME, sensor, value)
-            print(dt, LOCATION, DASHBOARD_NAME, sensor, value)
+            logger.info(f"{dt}, {LOCATION}, {DASHBOARD_NAME}, {sensor}, {value}")
 
         else:
             sleep(0.01)

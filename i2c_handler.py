@@ -15,8 +15,11 @@ from adafruit_ads1x15.analog_in import AnalogIn
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from imu_driver.adafruit_lsm6ds.lsm6ds33 import LSM6DS33
 from imu_driver.adafruit_lsm6ds import Rate, AccelRange, GyroRange
+from imu_driver.imu_controller import ImuController
 import RPi.GPIO as GPIO
 
+logger = logging.getLogger(__name__)  
+logger.setLevel(logging.DEBUG)
 
 class i2c_handler(object):
     ADC_ADDRESS = 0x48
@@ -26,7 +29,7 @@ class i2c_handler(object):
 
     def __init__(self, controller):
         self._controller = controller
-        self._i2c = busio.I2C(board.SCL, board.SDA, frequency=1000000)
+        self._i2c = busio.I2C(board.SCL, board.SDA, frequency=400000)
         self.adc_connected = False
         self.imu_connected = False
         while not self._i2c.try_lock():
@@ -49,7 +52,7 @@ class i2c_handler(object):
         if self.adc_connected:
             self._init_adc()
         if self.imu_connected:
-            self._init_imu()
+            self.imu_controller = ImuController(self)
 
         GPIO.setmode(GPIO.BCM)
         GPIO.setup(
@@ -58,9 +61,6 @@ class i2c_handler(object):
             initial=GPIO.LOW,
         )
 
-        GPIO.setup(14, GPIO.IN)
-        GPIO.add_event_detect(14, GPIO.RISING, callback=self.imu_interrupt_handler) 
-
         self._i2c_thread = Thread(target=self.i2c_thread)
         self._i2c_thread.start()
 
@@ -68,68 +68,6 @@ class i2c_handler(object):
         self._adc = ADS.ADS1115(self._i2c)
         self._adc_chan0 = AnalogIn(self._adc, ADS.P0)
         self._adc_chan2 = AnalogIn(self._adc, ADS.P2)
-
-    def _init_imu(self):
-        self._imu = LSM6DS33(self._i2c)
-        # self._imu.accelerometer_data_rate = Rate.RATE_12_5_HZ
-        # self._imu.accelerometer_range = AccelRange.RANGE_4G
-        # self._imu.gyro_data_rate = Rate.RATE_104_HZ
-        # self._imu.gyro_range = GyroRange.RANGE_250_DPS
-
-    def imu_interrupt_handler(self, channel):
-        #dt = datetime.utcnow()
-        #a = self._imu.acceleration
-       # g = self._imu.gyro
-        #self._controller.data_queue.put((dt, "imu", (a, g)))
-        #for i in range
-        #data1 = self._imu._fifo_status1
-        #data2 = self._imu._fifo_status2
-        #unread_data = data1 + (data2&0x0F)*255
-        #print(data1, data2, unread_data, " check1")
-        start_time = time.time()
-        print("interrupt ", start_time%1000)
-        #if unread_data >= 4096:
-        data = []
-        for i in range(0, 4000):
-            #data1 = self._imu._fifo_status1
-            #data2 = self._imu._fifo_status2
-            #unread_data = data1 + (data2&0x0F)*255
-            #imu_read_time = time.time()
-            data.append(self._imu._raw_fifo_data)
-            #print("imu: ", time.time()-imu_read_time)
-            #print(data1, data2, unread_data, self._imu._raw_fifo_data, " check2")
-            #time.sleep(0.00001)
-
-        print(time.time()-start_time)
-
-        status1 = self._imu._fifo_status1
-        status2 = self._imu._fifo_status2
-        unread_data = status1 + (status2&0x0F)*255
-        print("Bytes left in FIFO: ", unread_data)
-        #time.sleep(0.1)
-
-    def read_imu(self):
-        dt = datetime.utcnow()
-        #a = self._imu.acceleration
-       # g = self._imu.gyro
-        #self._controller.data_queue.put((dt, "imu", (a, g)))
-        #for i in range
-        data1 = self._imu._fifo_status1
-        data2 = self._imu._fifo_status2
-        unread_data = data1 + (data2&0x0F)*255
-        print(data1, data2, unread_data, " check1")
-        start_time = time.time()
-        if unread_data >= 4096:
-            while unread_data != 0:
-                data1 = self._imu._fifo_status1
-                data2 = self._imu._fifo_status2
-                unread_data = data1 + (data2&0x0F)*255
-                print(data1, data2, unread_data, self._imu._raw_fifo_data, " check2")
-                #sleep(0.00001)
-
-            print(time.time()-start_time)
-            time.sleep(0.1)
-
 
     def read_ir_temperature(self):
         self._adc.gain = 1 # set ADC gain to 4.096 V
@@ -164,9 +102,6 @@ class i2c_handler(object):
             if self.adc_connected:
                 self.read_ir_temperature()
             for i in range(50):
-                if self.imu_connected:
-                    #self.read_imu()
-                    pass
                 if self.adc_connected:
                     self.read_shock_travel()
                 time.sleep(0.02)
