@@ -2,7 +2,7 @@ import json
 import logging
 from threading import Lock, Thread
 from time import sleep
-from datetime import datetime
+from datetime import datetime, timezone
 
 from daq_controller import daq_controller
 
@@ -49,7 +49,7 @@ class DaqTester(object):
         Simulate GPS data
         """
         while True:
-            dt = datetime.utcnow()
+            dt = datetime.now(timezone.utc)
             gps_data = {
                 "lat": 1,
                 "lon": 2,
@@ -64,7 +64,7 @@ class DaqTester(object):
         Simulate IMU data
         """
         while True:
-            dt = datetime.utcnow()
+            dt = datetime.now(timezone.utc)
             a = [1, 2, 3]
             g = [4, 5 ,6]
             self._controller.data_queue.put((dt, "imu", (a, g)))
@@ -76,7 +76,7 @@ class DaqTester(object):
         """
         while True:
             voltage = [None] * 8
-            dt = datetime.utcnow()
+            dt = datetime.now(timezone.utc)
             for i in range(8):
                 sleep(0.001)
                 voltage[i] = i
@@ -89,7 +89,7 @@ class DaqTester(object):
         """
         while True:
             voltage = [None] * 4
-            dt = datetime.utcnow()
+            dt = datetime.now(timezone.utc)
             for i in range(4):
                 sleep(0.001)
                 voltage[i] = i

@@ -2,7 +2,7 @@ import sys
 import os
 import logging
 import numpy as np
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from imu_driver.adafruit_lsm6ds.lsm6ds33 import LSM6DS33
@@ -123,7 +123,7 @@ class ImuController():
 
         # Read FIFO data into buffer
         self._imu.i2c_device.write_then_readinto(FIFO_DATA_OUT_L, data_buffer)
-        latest_ts = datetime.utcnow()
+        latest_ts = datetime.now(timezone.utc)
 
         gyroscope, acceleration, timestamp = self._process_fifo_data(data_buffer)
 
@@ -145,7 +145,7 @@ class ImuController():
 
             self._i2c_handler._controller.data_queue.put((ts, "imu", processed_data))
 
-        logger.debug(f"Latest IMU Data: {processed_data}")
+        logger.debug(f"Latest IMU Data: {latest_ts}, {processed_data}")
 
         if timestamp[-1] > self.TIMESTAMP_RESET_THRESHOLD:
             self._imu._timestamp_reg2 = 0xAA # Reset timestamp counter to 0

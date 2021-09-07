@@ -2,7 +2,7 @@ import json
 import logging
 from threading import Lock, Thread
 from time import sleep
-from datetime import datetime
+from datetime import datetime, timezone
 
 # API Libraries
 import gps
@@ -23,7 +23,7 @@ class gps_handler(object):
 
     def gps_thread(self):
         while True:
-            dt = datetime.utcnow()
+            dt = datetime.now(timezone.utc)
             gps_data = {
                 "lat": self._gpsd.fix.latitude,
                 "lon": self._gpsd.fix.longitude,

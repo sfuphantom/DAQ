@@ -4,7 +4,7 @@ import json
 import logging
 from threading import Lock, Thread
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 
 # Hardware Libraries
 import board
@@ -73,7 +73,7 @@ class i2c_handler(object):
         self._adc.gain = 1 # set ADC gain to 4.096 V
         time.sleep(0.001)
         voltage = [None] * 8
-        dt = datetime.utcnow()
+        dt = datetime.now(timezone.utc)
         for i in range(8):
             GPIO.output(
                 self.IR_TEMPERATURE_SELECTOR_PINS,
@@ -87,7 +87,7 @@ class i2c_handler(object):
         self._adc.gain = 2/3 # set ADC gain to 6.144 V
         time.sleep(0.001)
         voltage = [None] * 4
-        dt = datetime.utcnow()
+        dt = datetime.now(timezone.utc)
         for i in range(4):
             GPIO.output(
                 self.SHOCK_TRAVEL_SELECTOR_PINS,
