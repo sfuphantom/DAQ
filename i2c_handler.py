@@ -46,7 +46,7 @@ class i2c_handler(object):
         if self.adc_connected:
             self._init_adc()
         if self.imu_connected:
-            self.imu_controller = ImuController(self)
+            self._imu_controller = ImuController(self)
 
         GPIO.setmode(GPIO.BCM)
         GPIO.setup(
