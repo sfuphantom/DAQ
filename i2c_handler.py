@@ -1,5 +1,3 @@
-import sys
-import os
 import json
 import logging
 from threading import Lock, Thread
@@ -11,10 +9,6 @@ import board
 import busio
 import adafruit_ads1x15.ads1115 as ADS
 from adafruit_ads1x15.analog_in import AnalogIn
-
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from imu_driver.adafruit_lsm6ds.lsm6ds33 import LSM6DS33
-from imu_driver.adafruit_lsm6ds import Rate, AccelRange, GyroRange
 from imu_driver.imu_controller import ImuController
 import RPi.GPIO as GPIO
 

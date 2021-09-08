@@ -1,10 +1,8 @@
-import sys
-import os
 import logging
 import numpy as np
 from datetime import datetime, timedelta, timezone
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+# Hardware Libraries
 from imu_driver.adafruit_lsm6ds.lsm6ds33 import LSM6DS33
 from imu_driver.adafruit_lsm6ds import Rate, AccelRange, GyroRange
 import RPi.GPIO as GPIO
