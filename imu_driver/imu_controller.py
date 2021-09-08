@@ -46,7 +46,7 @@ class ImuController():
         GPIO.setup(self.IMU_INT1_PIN, GPIO.IN)
         GPIO.add_event_detect(self.IMU_INT1_PIN, GPIO.RISING, callback=self._imu_interrupt_handler) 
 
-    def _init_imu(self, fifo_threshold: int=180):
+    def _init_imu(self, fifo_threshold: int = 180):
         """Initialize IMU with FIFO configuration
         
         Parameters
