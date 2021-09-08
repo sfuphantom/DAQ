@@ -19,7 +19,19 @@ DASHBOARD_NAME = "Test"
 MQTT_BROKER_IP = "localhost"
 
 class daq_controller(object):
+
+    LOG_FORMAT  = "%(Levelname)s, %(asctime)s - %(message)s"
+    logging.basicConfig(filename= "i2c_handler.log",
+        level=logging.DEBUG,
+        format=LOG_FORMAT,
+        filemode='w')
+    
+
     def __init__(self, testmode=False):
+
+        
+        self.logger = logging.getLogger()
+
         self.data_queue = Queue()
 
         if testmode == False:
@@ -31,9 +43,12 @@ class daq_controller(object):
 
         self.mqtt = MqttHandler(DASHBOARD_NAME, MQTT_BROKER_IP)
 
+    
+
+
 def main():
     controller = daq_controller(testmode=True)
-
+    
     while True:
         if controller.data_queue.qsize() > 0:
             dt, sensor, data = controller.data_queue.get()

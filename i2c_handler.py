@@ -14,13 +14,19 @@ from adafruit_lsm6ds import Rate, AccelRange, GyroRange
 import RPi.GPIO as GPIO
 
 
+
+
+
+
+
 class i2c_handler(object):
     ADC_ADDRESS = 0x48
     IMU_ADDRESS = 0x6a
     IR_TEMPERATURE_SELECTOR_PINS = [17, 27, 22]  # GPIO pin numbering
     SHOCK_TRAVEL_SELECTOR_PINS = [23, 24]  # GPIO pin numbering
+    
 
-    def __init__(self, controller):
+    def __init__(self, controller):  
         self._controller = controller
         self._i2c = busio.I2C(board.SCL, board.SDA)
         self.adc_connected = False
@@ -32,13 +38,18 @@ class i2c_handler(object):
             if self.ADC_ADDRESS in i2c_addresses:
                 self.adc_connected = True
                 print("ADC is connected with address %s" % hex(self.ADC_ADDRESS))
+                self._controller.logger.info("ADC is connected with address %s" % hex(self.ADC_ADDRESS))
             else:
                 print("ADC is not connected")
+                self._controller.logger.warning("ADC is not connected")
+
             if self.IMU_ADDRESS in i2c_addresses:
                 self.imu_connected = True
                 print("IMU is connected with address %s" % hex(self.IMU_ADDRESS))
+                self._controller.logger.info("IMU is connected with address %s" % hex(self.IMU_ADDRESS))
             else:
                 print("IMU is not connected")
+                self._controller.logger.warning("IMU is not connected")
         finally:
             self._i2c.unlock()
 
