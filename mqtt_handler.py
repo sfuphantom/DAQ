@@ -2,6 +2,12 @@ import paho.mqtt.client as mqtt
 import json
 import time
 import RPi.GPIO as GPIO
+import logging
+
+from process_manager import SystemState
+
+logger = logging.getLogger(__name__)  
+logger.setLevel(logging.DEBUG)
 
 # Front-end communication topics
 MQTT_PUB_TOPICS = {
@@ -11,9 +17,10 @@ MQTT_PUB_TOPICS = {
     "IR_TEMPERATURE_TOPIC": "events/irTemperature",
 }
 
-# Shutdown Topic
+# Command topics
 MQTT_SUB_TOPICS = {
-    "SHUTDOWN_TOPIC": "commands/shutdown"
+    "SHUTDOWN_PIN_TOPIC": "commands/shutdown",
+    "STATE_TOPIC": "commands/state"
 }
 
 # Shutdown circuit GPIO pin
@@ -41,14 +48,22 @@ class MqttHandler():
     __setShutdownPin()
         Set output of shutdown pin
     """
-    def __init__(self, client_id, broker_ip):
+    def __init__(self, client_id, broker_ip, controller):
+        self.controller = controller
+
         GPIO.setup(SHUTDOWN_PIN, GPIO.OUT, initial=GPIO.LOW)
 
         self.client = mqtt.Client(client_id=client_id, clean_session=True) # Initialize client
         self.client.on_connect = self.__on_connect # Call this function when client successfully connects
         self.client.on_message = self.__on_message # Call this function when message is received on a subscribed topic
         self.client.on_disconnect = self.__on_disconnect
-        self.client.connect(broker_ip, 1883, 60) # Connect to the local MQTT broker
+
+        # enable TLS
+        self.client.tls_set(tls_version=mqtt.ssl.PROTOCOL_TLS)
+
+        # set username and password
+        self.client.username_pw_set("username", "password")
+        self.client.connect(broker_ip, 8883, 10) # Connect to the local MQTT broker
 
         self.client.loop_start() # Start the MQTT Client        
       
@@ -63,7 +78,6 @@ class MqttHandler():
         rc : int
             disconnection state
         """
-
         print("disconnected with result code "+str(rc))
 
     def __on_connect(self, client, userdata, flags, rc):
@@ -79,7 +93,6 @@ class MqttHandler():
         rc : int
             connection state
         """
-
         print("Connected with result code "+str(rc))
 
         # Subscribing in on_connect() means that if we lose the connection and
@@ -102,10 +115,12 @@ class MqttHandler():
         try:
             print(msg.topic+" "+str(msg.payload)) 
             topic = msg.topic
-            data = msg.payload
+            data = msg.payload.decode('utf-8')
 
-            if topic == MQTT_SUB_TOPICS['SHUTDOWN_TOPIC']:
+            if topic == MQTT_SUB_TOPICS['SHUTDOWN_PIN_TOPIC']:
                 self.__setShutdownPin(1)
+            if topic == MQTT_SUB_TOPICS['STATE_TOPIC']:
+                self.__setSystemState(data)
             else:
                 print("Invalid topic " + msg.topic)
                   
@@ -120,7 +135,7 @@ class MqttHandler():
         pinValue : int
             GPIO output
         """
-
+        print("!!!! SHUTDOWN INITIATED")
         if pinValue == 1:
             gpio_value = GPIO.HIGH
         elif pinValue == 0:
@@ -130,3 +145,17 @@ class MqttHandler():
             return
 
         GPIO.output(SHUTDOWN_PIN, gpio_value)
+
+    def __setSystemState(self, value):
+        """Called automatically to notify if client disconnects from broker
+        Parameters
+        ----------
+        pinValue : int
+            GPIO output
+        """
+        print(value)
+        if value == SystemState['SHUTDOWN']: 
+            self.controller.state = SystemState['SHUTDOWN']
+        else:
+            self.controller.set_system_state(value)
+

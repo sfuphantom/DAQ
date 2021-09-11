@@ -1,22 +1,22 @@
 from queue import Queue
 from time import sleep
 import json
-
 # Database
 from query import insertRecord
 
 # Objects
+from process_manager import ProcessManager, SystemState
 from i2c_handler import i2c_handler
 from gps_handler import gps_handler
 from mqtt_handler import *
-from daq_controller_tester import *
+from utils.daq_controller_tester import *
 
 # Temperature Calculation
 from bisect import bisect_left
 
 LOCATION = "Pi"
 DASHBOARD_NAME = "Test"
-MQTT_BROKER_IP = "localhost"
+MQTT_BROKER_IP = "78da1aca5bac48ceb4c9d7eff3de95e9.s1.eu.hivemq.cloud"
 
 logging.basicConfig(level=logging.NOTSET)
 
@@ -25,7 +25,9 @@ logger.setLevel(logging.WARNING)
 
 class daq_controller(object):
     def __init__(self, testmode=False):
+        self.process_manager = ProcessManager(self)
         self.data_queue = Queue()
+        self.state = SystemState['ACTIVE']
 
         if testmode == False:
             self._i2c = i2c_handler(self)
@@ -34,12 +36,29 @@ class daq_controller(object):
             daq_tester = DaqTester(self)
             print("Test mode engaged")
 
-        self.mqtt = MqttHandler(DASHBOARD_NAME, MQTT_BROKER_IP)
+        self.mqtt = MqttHandler(DASHBOARD_NAME, MQTT_BROKER_IP, self)
+
+    def shutdown(self):
+        logger.warning("SHUTTING DOWN...")
+        self._i2c.shutdown()
+        self._gps.shutdown()
+        logger.warning("I2C has been shut down")
+        self.mqtt.client.disconnect()
+        exit()
+
+    def set_system_state(self, state):
+        if state == SystemState['PAUSED'] or state == SystemState['ACTIVE']:
+            self._i2c.pause(state)
+            self._gps.pause(state)  
+        else:
+            logger.warning("Invalid system state set")
+
+
 
 def main():
     controller = daq_controller(testmode=False)
 
-    while True:
+    while controller.state != SystemState['SHUTDOWN']:
         if controller.data_queue.qsize() > 0:
             dt, sensor, data = controller.data_queue.get()
             if sensor == "gps":
@@ -77,6 +96,10 @@ def main():
 
         else:
             sleep(0.01)
+
+    # Shutdown gracefully
+    controller.shutdown()
+
 
 TEMP_CORRECTION_FACTOR = 0.98
 TEMP_VOLT_LOOKUP = [-1.35, -1.11, -0.86, -0.59, -0.31, 0.00, 0.32, 0.67, 1.03, 1.41, 1.81, 2.24, 2.68, 3.14, 3.62, 4.13, 4.66, 5.21, 5.78, 6.38, 7.00]

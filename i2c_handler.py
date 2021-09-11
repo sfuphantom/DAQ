@@ -12,6 +12,8 @@ from adafruit_ads1x15.analog_in import AnalogIn
 from imu_driver.imu_controller import ImuController
 import RPi.GPIO as GPIO
 
+from process_manager import SystemState
+
 logger = logging.getLogger(__name__)  
 logger.setLevel(logging.DEBUG)
 
@@ -55,6 +57,8 @@ class i2c_handler(object):
             initial=GPIO.LOW,
         )
 
+        self._i2c_thread_state = SystemState['ACTIVE']
+
         self._i2c_thread = Thread(target=self.i2c_thread)
         self._i2c_thread.start()
 
@@ -91,11 +95,34 @@ class i2c_handler(object):
             voltage[i] = self._adc_chan2.voltage
         self._controller.data_queue.put((dt, "shock_travel", voltage))
 
+    def shutdown(self):
+        self._imu_controller.shutdown()
+        self._i2c.deinit()
+        self._i2c_thread_state = SystemState['SHUTDOWN']
+
+    def pause(self, pause_status):
+        if pause_status == SystemState['ACTIVE']:
+            if self._i2c_thread_state != SystemState['ACTIVE']:
+                print("I2C ACTIVE")
+                self._i2c_thread_state == SystemState['ACTIVE']
+                self._imu_controller._init_imu()
+
+        elif pause_status == SystemState['PAUSED']:
+            if self._i2c_thread_state != SystemState['PAUSED']:
+                print("I2C PAUSED")
+                self._imu_controller.shutdown()
+                self._i2c_thread_state = SystemState['PAUSED']
+
+
     def i2c_thread(self):
-        while True:
-            if self.adc_connected:
-                self.read_ir_temperature()
-            for i in range(50):
+        while self._i2c_thread_state != SystemState['SHUTDOWN']:
+            if self._i2c_thread_state == SystemState['PAUSED']:
+                time.sleep(0.1)
+            else:
                 if self.adc_connected:
-                    self.read_shock_travel()
-                time.sleep(0.02)
+                    self.read_ir_temperature()
+                for i in range(50):
+                    if self.adc_connected:
+                        self.read_shock_travel()
+                    time.sleep(0.02)
+
