@@ -37,9 +37,9 @@ MQTT_TOPICS = {
 }
 
 SystemState = {
-  '0':'ACTIVE',
-  '1':'PAUSED',
-  '2':'SHUTDOWN'
+    '0': 'ACTIVE',
+    '1': 'PAUSED',
+    '2': 'SHUTDOWN'
 }
 
 # In an infinite loop, send MQTT messages based on user input
@@ -56,7 +56,7 @@ while True:
 
     elif topic_choice == '1':
         topic = MQTT_TOPICS['STATE_TOPIC']
-        user_prompt = "State options: 0:Active, 1:Paused, 2:Shutdown\n" 
+        user_prompt = "State options: 0:Active, 1:Paused, 2:Shutdown\n"
         command = SystemState[input(user_prompt)]
 
     else:

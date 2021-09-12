@@ -1,10 +1,9 @@
 import signal
-import time
 
 SystemState = {
-  'ACTIVE' : 'ACTIVE',
-  'PAUSED' : 'PAUSED',
-  'SHUTDOWN' : 'SHUTDOWN'
+    'ACTIVE': 'ACTIVE',
+    'PAUSED': 'PAUSED',
+    'SHUTDOWN': 'SHUTDOWN'
 }
 
 class ProcessManager:

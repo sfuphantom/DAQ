@@ -1,6 +1,7 @@
 from queue import Queue
 from time import sleep
 import json
+
 # Database
 from query import insertRecord
 
@@ -20,7 +21,7 @@ MQTT_BROKER_IP = "78da1aca5bac48ceb4c9d7eff3de95e9.s1.eu.hivemq.cloud"
 
 logging.basicConfig(level=logging.NOTSET)
 
-logger = logging.getLogger(__name__)  
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
 
 class daq_controller(object):
@@ -49,7 +50,7 @@ class daq_controller(object):
     def set_system_state(self, state):
         if state == SystemState['PAUSED'] or state == SystemState['ACTIVE']:
             self._i2c.pause(state)
-            self._gps.pause(state)  
+            self._gps.pause(state)
         else:
             logger.warning("Invalid system state set")
 

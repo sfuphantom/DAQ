@@ -6,7 +6,7 @@ import logging
 
 from process_manager import SystemState
 
-logger = logging.getLogger(__name__)  
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 # Front-end communication topics
@@ -65,8 +65,8 @@ class MqttHandler():
         self.client.username_pw_set("username", "password")
         self.client.connect(broker_ip, 8883, 10) # Connect to the local MQTT broker
 
-        self.client.loop_start() # Start the MQTT Client        
-      
+        self.client.loop_start() # Start the MQTT Client
+
     def __on_disconnect(self, client, userdata, rc):
         """Called automatically to notify if client disconnects from broker
         Parameters
@@ -101,7 +101,7 @@ class MqttHandler():
             client.subscribe(MQTT_SUB_TOPICS[key])
 
     def __on_message(self, client, userdata, msg):
-        """Called automatically to notify if client disconnects from broker
+        """Called automatically when a message is received from the broker.
         Parameters
         ----------
         client : MQTT client
@@ -113,23 +113,23 @@ class MqttHandler():
         """
 
         try:
-            print(msg.topic+" "+str(msg.payload)) 
+            print(msg.topic+" "+str(msg.payload))
             topic = msg.topic
             data = msg.payload.decode('utf-8')
 
             if topic == MQTT_SUB_TOPICS['SHUTDOWN_PIN_TOPIC']:
                 self.__setShutdownPin(1)
-            if topic == MQTT_SUB_TOPICS['STATE_TOPIC']:
+            elif topic == MQTT_SUB_TOPICS['STATE_TOPIC']:
                 self.__setSystemState(data)
             else:
                 print("Invalid topic " + msg.topic)
-                  
+
         except Exception as e:
             print(e)
 
 
     def __setShutdownPin(self, pinValue):
-        """Called automatically to notify if client disconnects from broker
+        """Set the value of the shutdown pin.
         Parameters
         ----------
         pinValue : int
@@ -147,14 +147,14 @@ class MqttHandler():
         GPIO.output(SHUTDOWN_PIN, gpio_value)
 
     def __setSystemState(self, value):
-        """Called automatically to notify if client disconnects from broker
+        """Set the system state.
         Parameters
         ----------
-        pinValue : int
-            GPIO output
+        value : str
+            Value from the SystemState dict.
         """
         print(value)
-        if value == SystemState['SHUTDOWN']: 
+        if value == SystemState['SHUTDOWN']:
             self.controller.state = SystemState['SHUTDOWN']
         else:
             self.controller.set_system_state(value)
