@@ -79,7 +79,7 @@ class DaqTester(object):
             dt = datetime.now(timezone.utc)
             for i in range(8):
                 sleep(0.001)
-                voltage[i] = i
+                voltage[i] = 1+i/10
             self._controller.data_queue.put((dt, "ir_temperature", voltage))
             sleep(self.IR_PERIOD)
 

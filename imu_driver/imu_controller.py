@@ -173,6 +173,7 @@ class ImuController():
 
         gyroscope, acceleration, timestamp = self._process_fifo_data(data_buffer)
 
+        processed_data = {}
         for i in range(len(gyroscope)-1, -1, -1):
             # If timer has been reset, timestamps start from 0 again
             if timestamp[0] > timestamp[i]:
@@ -189,10 +190,13 @@ class ImuController():
                 "gz": gyroscope[i,2], 
             }   
 
+            processed_data['ts'] = ts.strftime("%m/%d/%Y, %H:%M:%S.%f")
+
             self._i2c_handler._controller.data_queue.put((ts, "imu", processed_data))
 
-        logger.debug(f"Latest IMU Data: {latest_ts}, {processed_data}")
+        if len(processed_data) > 0:
+            logger.debug(f"Latest IMU Data: {latest_ts}, {processed_data}")
 
-        if timestamp[-1] > self.TIMESTAMP_RESET_THRESHOLD:
-            self._imu._timestamp_reg2 = 0xAA # Reset timestamp counter to 0
+            if timestamp[-1] > self.TIMESTAMP_RESET_THRESHOLD:
+                self._imu._timestamp_reg2 = 0xAA # Reset timestamp counter to 0
 

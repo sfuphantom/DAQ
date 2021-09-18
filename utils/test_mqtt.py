@@ -17,11 +17,14 @@ def on_connect(client, userdata, flags, rc):
 def on_message(client, userdata, msg):
     print("Received message: " + msg.topic + " -> " + msg.payload.decode("utf-8"))
 
+def on_disconnect(client, userdata, rc):
+    print("disconnected with result code "+str(rc))
+
 # create the client
 client = mqtt.Client()
 client.on_connect = on_connect
 client.on_message = on_message
-
+client.on_disconnect = on_disconnect
 # enable TLS
 client.tls_set(tls_version=mqtt.ssl.PROTOCOL_TLS)
 
