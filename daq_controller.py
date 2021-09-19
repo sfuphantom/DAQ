@@ -67,7 +67,7 @@ def main():
         if controller.data_queue.qsize() > 0:
             dt, sensor, data = controller.data_queue.get()
             if sensor == "gps":
-                data['dt'] = dt.strftime("%m/%d/%Y, %H:%M:%S.%f")
+                data['dt'] = dt.isoformat()
                 value = json.dumps(data, separators=(',', ':'))
                 controller.mqtt.client.publish(MQTT_PUB_TOPICS['GPS_TOPIC'],
                                   payload=round_json(value, MQTT_PRECISION),
@@ -82,7 +82,10 @@ def main():
                                   retain=False)
 
             elif sensor == "shock_travel":
-                data = {"shock_travel": list(map(shock_travel_convert, data)), 'dt': dt.strftime("%m/%d/%Y, %H:%M:%S.%f")}
+                data = {
+                    "shock_travel": list(map(shock_travel_convert, data)),
+                    'dt': dt.isoformat(),
+                }
                 value = json.dumps(data, separators=(',', ':'))
                 controller.mqtt.client.publish(MQTT_PUB_TOPICS['SHOCK_TRAVEL_TOPIC'],
                                   payload=round_json(value, MQTT_PRECISION),
@@ -90,7 +93,10 @@ def main():
                                   retain=False)
 
             elif sensor == "ir_temperature":
-                data = {"temperatures": list(map(ir_temperature_convert, data)), 'dt': dt.strftime("%m/%d/%Y, %H:%M:%S.%f")}
+                data = {
+                    "temperatures": list(map(ir_temperature_convert, data)),
+                    'dt': dt.isoformat(),
+                }
                 value = json.dumps(data, separators=(',', ':'))
                 controller.mqtt.client.publish(MQTT_PUB_TOPICS['IR_TEMPERATURE_TOPIC'],
                                   payload=round_json(value, MQTT_PRECISION),

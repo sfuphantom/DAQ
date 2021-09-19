@@ -190,7 +190,7 @@ class ImuController():
                 "gz": gyroscope[i,2], 
             }   
 
-            processed_data['ts'] = ts.strftime("%m/%d/%Y, %H:%M:%S.%f")
+            processed_data['dt'] = ts.isoformat()
 
             self._i2c_handler._controller.data_queue.put((ts, "imu", processed_data))
 
