@@ -13,8 +13,9 @@ from imu_driver.imu_controller import ImuController
 import RPi.GPIO as GPIO
 
 from process_manager import SystemState
+from const import Sensor
 
-logger = logging.getLogger(__name__)  
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 class i2c_handler(object):
@@ -79,7 +80,7 @@ class i2c_handler(object):
             )
             time.sleep(0.001)
             voltage[i] = self._adc_chan0.voltage
-        self._controller.data_queue.put((dt, "ir_temperature", voltage))
+        self._controller.data_queue.put((Sensor.TIRE_TEMPERATURE, dt, voltage))
 
     def read_shock_travel(self):
         self._adc.gain = 2/3 # set ADC gain to 6.144 V
@@ -93,7 +94,7 @@ class i2c_handler(object):
             )
             time.sleep(0.001)
             voltage[i] = self._adc_chan2.voltage
-        self._controller.data_queue.put((dt, "shock_travel", voltage))
+        self._controller.data_queue.put((Sensor.SHOCK_TRAVEL, dt, voltage))
 
     def shutdown(self):
         self._imu_controller.shutdown()

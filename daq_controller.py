@@ -11,6 +11,7 @@ from i2c_handler import i2c_handler
 from gps_handler import gps_handler
 from mqtt_handler import *
 from utils.daq_controller_tester import *
+from const import Sensor
 
 # Temperature Calculation
 from bisect import bisect_left
@@ -65,8 +66,8 @@ def main():
 
     while controller.state != SystemState['SHUTDOWN']:
         if controller.data_queue.qsize() > 0:
-            dt, sensor, data = controller.data_queue.get()
-            if sensor == "gps":
+            sensor, dt, data = controller.data_queue.get()
+            if sensor is Sensor.GPS:
                 data['dt'] = dt.isoformat()
                 value = json.dumps(data, separators=(',', ':'))
                 controller.mqtt.client.publish(MQTT_PUB_TOPICS['GPS_TOPIC'],
@@ -74,14 +75,14 @@ def main():
                                   qos=2,
                                   retain=False)
 
-            elif sensor == "imu":
+            elif sensor is Sensor.IMU:
                 value = json.dumps(data, separators=(',', ':'))
                 controller.mqtt.client.publish(MQTT_PUB_TOPICS['IMU_TOPIC'],
                                   payload=round_json(value, MQTT_PRECISION),
                                   qos=2,
                                   retain=False)
 
-            elif sensor == "shock_travel":
+            elif sensor is Sensor.SHOCK_TRAVEL:
                 data = {
                     "shock_travel": list(map(shock_travel_convert, data)),
                     'dt': dt.isoformat(),
@@ -92,7 +93,7 @@ def main():
                                   qos=2,
                                   retain=False)
 
-            elif sensor == "ir_temperature":
+            elif sensor is Sensor.TIRE_TEMPERATURE:
                 data = {
                     "temperatures": list(map(ir_temperature_convert, data)),
                     'dt': dt.isoformat(),

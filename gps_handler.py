@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 import gps
 
 from process_manager import SystemState
+from const import Sensor
 
 class gps_handler(object):
     def __init__(self, controller):
@@ -46,5 +47,5 @@ class gps_handler(object):
                     "alt": self._gpsd.fix.altitude,
                     "speed": self._gpsd.fix.speed,
                 }
-                self._controller.data_queue.put((dt, "gps", gps_data))
+                self._controller.data_queue.put((Sensor.GPS, dt, gps_data))
                 time.sleep(1)
