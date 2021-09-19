@@ -7,6 +7,8 @@ from imu_driver.adafruit_lsm6ds.lsm6ds33 import LSM6DS33
 from imu_driver.adafruit_lsm6ds import Rate, AccelRange, GyroRange
 import RPi.GPIO as GPIO
 
+from const import Sensor
+
 logger = logging.getLogger(__name__)  
 logger.setLevel(logging.INFO)
 
@@ -189,7 +191,7 @@ class ImuController():
                 "gz": gyroscope[i,2], 
             }   
 
-            self._i2c_handler._controller.data_queue.put((ts, "imu", processed_data))
+            self._i2c_handler._controller.data_queue.put((Sensor.IMU, ts, processed_data))
 
         logger.debug(f"Latest IMU Data: {latest_ts}, {processed_data}")
 

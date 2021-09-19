@@ -4,7 +4,7 @@ from threading import Lock, Thread
 from time import sleep
 from datetime import datetime, timezone
 
-from daq_controller import daq_controller
+from const import Sensor
 
 class DaqTester(object):
     """
@@ -56,7 +56,7 @@ class DaqTester(object):
                 "alt": 3,
                 "speed": 4,
             }
-            self._controller.data_queue.put((dt, "gps", gps_data))
+            self._controller.data_queue.put((Sensor.GPS, dt, gps_data))
             sleep(self.GPS_PERIOD)
 
     def test_imu_thread(self):
@@ -67,7 +67,7 @@ class DaqTester(object):
             dt = datetime.now(timezone.utc)
             a = [1, 2, 3]
             g = [4, 5 ,6]
-            self._controller.data_queue.put((dt, "imu", (a, g)))
+            self._controller.data_queue.put((Sensor.IMU, dt, (a, g)))
             sleep(self.IMU_PERIOD)
 
     def test_ir_thread(self):
@@ -80,7 +80,7 @@ class DaqTester(object):
             for i in range(8):
                 sleep(0.001)
                 voltage[i] = i
-            self._controller.data_queue.put((dt, "ir_temperature", voltage))
+            self._controller.data_queue.put((Sensor.TIRE_TEMPERATURE, dt, voltage))
             sleep(self.IR_PERIOD)
 
     def test_shock_thread(self):
@@ -93,6 +93,6 @@ class DaqTester(object):
             for i in range(4):
                 sleep(0.001)
                 voltage[i] = i
-            self._controller.data_queue.put((dt, "shock_travel", voltage))
+            self._controller.data_queue.put((Sensor.SHOCK_TRAVEL, dt, voltage))
             sleep(self.SHOCK_PERIOD)
 
