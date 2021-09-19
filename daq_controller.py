@@ -15,9 +15,13 @@ from utils.daq_controller_tester import *
 # Temperature Calculation
 from bisect import bisect_left
 
+# Utility functions
+from utils.utils import round_json
+
 LOCATION = "Pi"
 DASHBOARD_NAME = "Test"
 MQTT_BROKER_IP = "78da1aca5bac48ceb4c9d7eff3de95e9.s1.eu.hivemq.cloud"
+MQTT_PRECISION = 3
 
 logging.basicConfig(level=logging.NOTSET)
 
@@ -63,32 +67,39 @@ def main():
         if controller.data_queue.qsize() > 0:
             dt, sensor, data = controller.data_queue.get()
             if sensor == "gps":
+                data['dt'] = dt.isoformat()
                 value = json.dumps(data, separators=(',', ':'))
                 controller.mqtt.client.publish(MQTT_PUB_TOPICS['GPS_TOPIC'],
-                                  payload=value,
+                                  payload=round_json(value, MQTT_PRECISION),
                                   qos=2,
                                   retain=False)
 
             elif sensor == "imu":
                 value = json.dumps(data, separators=(',', ':'))
                 controller.mqtt.client.publish(MQTT_PUB_TOPICS['IMU_TOPIC'],
-                                  payload=value,
+                                  payload=round_json(value, MQTT_PRECISION),
                                   qos=2,
                                   retain=False)
 
             elif sensor == "shock_travel":
-                data_dict = {"shock_travel": list(map(shock_travel_convert, data))}
-                value = json.dumps(data_dict, separators=(',', ':'))
+                data = {
+                    "shock_travel": list(map(shock_travel_convert, data)),
+                    'dt': dt.isoformat(),
+                }
+                value = json.dumps(data, separators=(',', ':'))
                 controller.mqtt.client.publish(MQTT_PUB_TOPICS['SHOCK_TRAVEL_TOPIC'],
-                                  payload=value,
+                                  payload=round_json(value, MQTT_PRECISION),
                                   qos=2,
                                   retain=False)
 
             elif sensor == "ir_temperature":
-                data_dict = {"temperatures": list(map(ir_temperature_convert, data))}
-                value = json.dumps(data_dict, separators=(',', ':'))
+                data = {
+                    "temperatures": list(map(ir_temperature_convert, data)),
+                    'dt': dt.isoformat(),
+                }
+                value = json.dumps(data, separators=(',', ':'))
                 controller.mqtt.client.publish(MQTT_PUB_TOPICS['IR_TEMPERATURE_TOPIC'],
-                                  payload=value,
+                                  payload=round_json(value, MQTT_PRECISION),
                                   qos=2,
                                   retain=False)
 
