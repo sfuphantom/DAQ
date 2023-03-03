@@ -2,10 +2,8 @@
 #define LOG_LIB
 
 #include <Arduino.h>
+#include <stdarg.h>
 #include "ArduinoLog.h"
-
-#define LOG_LOCAL_LEVEL ESP_LOG_VERBOSE
-#include "esp_log.h"
 
 namespace Logger
 {
@@ -17,16 +15,40 @@ namespace Logger
 
     void Start();
 
-    void Verbose(const char *msg);
+    template <class T, typename... Args>
+    void Verbose(T msg, Args... args)
+    {
+        Log.verboseln(msg, args...);
+    }
 
-    void Trace(const char *msg);
+    template <class T, typename... Args>
+    void Trace(T msg, Args... args)
+    {
+        Log.traceln(msg, args...);
+    }
 
-    void Info(const char *msg);
+    template <class T, typename... Args>
+    void Notice(T msg, Args... args)
+    {
+        Log.noticeln(msg, args...);
+    }
 
-    void Warning(const char *msg);
+    template <class T, typename... Args>
+    void Warning(T msg, Args... args)
+    {
+        Log.warningln(msg, args...);
+    }
 
-    void Error(const char *msg);
+    template <class T, typename... Args>
+    void Error(T msg, Args... args)
+    {
+        Log.errorln(msg, args...);
+    }
 
-    void Fatal(const char *msg);
+    template <class T, typename... Args>
+    void Fatal(T msg, Args... args)
+    {
+        Log.fatalln(msg, args...);
+    }
 }
 #endif

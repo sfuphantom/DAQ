@@ -1,5 +1,11 @@
 #include "Log.h"
 
+// Output Log Template:
+// TIME [LOG_LEVEL] : LOG INFO STRING
+// 17:20:10:38 [Info] : ArduinoLog System Start Success
+
+// uses printf-like structure, ie: Error(format string, data_variables)
+
 namespace Logger
 {
 
@@ -9,25 +15,25 @@ namespace Logger
         switch (logLevel)
         {
         case 0:
-            _logOutput->print("[SILENT] :");
+            _logOutput->print("[SILENT] : ");
             break;
         case 1:
-            _logOutput->print("[FATAL] :");
+            _logOutput->print("[FATAL] : ");
             break;
         case 2:
-            _logOutput->print("[ERROR] :");
+            _logOutput->print("[ERROR] : ");
             break;
         case 3:
-            _logOutput->print("[WARNING] :");
+            _logOutput->print("[WARNING] : ");
             break;
         case 4:
-            _logOutput->print("[INFO] :");
+            _logOutput->print("[Notice] : ");
             break;
         case 5:
-            _logOutput->print("[TRACE] :");
+            _logOutput->print("[TRACE] : ");
             break;
         case 6:
-            _logOutput->print("[VERBOSE] :");
+            _logOutput->print("[VERBOSE] : ");
             break;
 
         default:
@@ -61,7 +67,7 @@ namespace Logger
 
     static void PrintSuffix(Print *_logOutput, int logLevel)
     {
-        _logOutput->print("");
+        _logOutput->print(" ");
     }
 
     // Wrapper function to be called at setup
@@ -71,45 +77,7 @@ namespace Logger
         Log.setSuffix(PrintSuffix);
         Log.begin(LOG_LEVEL_VERBOSE, &Serial);
         Log.setShowLevel(false);
-        Log.info("ArduinoLog System Start Success" CR);
+        Log.infoln("ArduinoLog System Start Success");
     }
 
-    void Verbose(const char *msg)
-    {
-        Log.verbose(msg, CR);
-    }
-
-    void Trace(const char *msg)
-    {
-        Log.trace(msg, CR);
-    }
-
-    void Info(const char *msg)
-    {
-        Log.info(msg, CR);
-    }
-
-    void Warning(const char *msg)
-    {
-        Log.warning(msg, CR);
-    }
-
-    void Error(const char *msg)
-    {
-        Log.error(msg, CR);
-    }
-
-    void Fatal(const char *msg)
-    {
-        Log.fatal(msg, CR);
-    }
 }
-// #define USE_ESP32 uncomment to remove ArduinoLog usecase
-
-// void Logger::log(LogLevel level, const std::string &message);
-
-// Desired Log Template:
-// TIME [LOG_LEVEL] : LOG INFO STRING
-// 17:20:10:38 [Info] : ArduinoLog System Start Success
-// ESP32Log Template current:
-// I () DAQ: ESP32log System Start Success
