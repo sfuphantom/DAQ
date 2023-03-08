@@ -1,17 +1,11 @@
-#ifndef LOG_LIB
-#define LOG_LIB
+#ifndef LOGGER_LIB
+#define LOGGER_LIB
 
-#include <Arduino.h>
-#include <stdarg.h>
+#include "system_config.h"
 #include "ArduinoLog.h"
 
 namespace Logger
 {
-
-    uint32_t constexpr MSECS_PER_SEC = 1000;
-    uint32_t constexpr SECS_PER_MIN = 60;
-    uint32_t constexpr SECS_PER_HOUR = 3600;
-    uint32_t constexpr SECS_PER_DAY = 86400;
 
     void Start();
 
@@ -50,5 +44,15 @@ namespace Logger
     {
         Log.fatalln(msg, args...);
     }
+
 }
+
+static void PrintLevel(Print *_logOutput, int logLevel);
+
+static void PrintTimestamp(Print *_logOutput);
+
+static void PrintPrefix(Print *_logOutput, int logLevel);
+
+static void PrintSuffix(Print *_logOutput, int logLevel);
+
 #endif

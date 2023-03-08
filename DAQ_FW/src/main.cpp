@@ -1,19 +1,16 @@
-#include <Arduino.h>
-#include "Log.h"
-using namespace Logger;
+#include "Logger.h"
 
 void setup()
 {
   // put your setup code here, to run once:
-  Serial.begin(9600);
   Logger::Start();
-  Notice("Setup");
+  Logger::Notice("Setup");
 }
 
 void loop()
 {
   // put your main code here, to run repeatedly:
-  Notice("Hello World");
+  Logger::Notice("Hello World");
 
   delay(1000);
 }
