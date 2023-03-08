@@ -4,7 +4,6 @@
 #include <Arduino.h>
 #include <stdarg.h>
 
-
 // DAQ global Log Level Setup Filter
 #define CURRENT_LOG_LEVEL LOG_LEVEL_VERBOSE
 // Options:
