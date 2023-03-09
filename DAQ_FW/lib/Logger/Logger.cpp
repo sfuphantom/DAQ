@@ -1,7 +1,5 @@
 #include "Logger.h"
 
-using namespace Logger;
-
 // Output Log Template:
 // TIME [LOG_LEVEL] : LOG INFO STRING
 // 17:20:10:38 [Info] : ArduinoLog System Start Success
