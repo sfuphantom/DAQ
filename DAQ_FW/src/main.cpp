@@ -1,16 +1,26 @@
-#include "Logger.h"
+#include <Arduino.h>
+#include <ISensorDriver.h>
 
-void setup()
-{
+int sr = 4; // pin number
+
+void setup() {
   // put your setup code here, to run once:
-  Logger::Start();
-  Logger::Notice("Setup");
-}
+  pinMode(sr, OUTPUT);
+  Serial.begin(9600);
+  Serial.println("Connected");
+};
 
-void loop()
-{
-  // put your main code here, to run repeatedly:
-  Logger::Notice("Hello World");
+void loop() {
+  int data = analogRead(sr);
+
+  float x=0.5; //temp sensor proportionality constant
+
+  // example implementation of functions
+  // data = brakePressure(data); 
+
+  //display data
+  Serial.print("Sensor reading=");
+  Serial.println(data);
 
   delay(1000);
-}
+  };
