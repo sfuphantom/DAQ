@@ -1,9 +1,11 @@
 
 #include "Logger.h"
-#include "ISensorData.h"
+#include "IADCSensor.h"
 
 // object declarations can't be done in setup()
-IsensorData SensorTest(GAIN_TWO);
+
+// params: sensorname, sensorID, adcID, gainmode
+IADCSensor SensorTest("TestSensor", 1, 1, GAIN_TWO);
 
 void setup()
 {
@@ -15,9 +17,9 @@ void setup()
 void loop()
 {
   // put your main code here, to run repeatedly:
+
   Logger::Notice("Hello World");
 
-  SensorTest.Read();
   SensorTest.Process();
 
   delay(1000);
