@@ -21,17 +21,17 @@
 IADCSensor::IADCSensor(const char *_SensorName, uint16_t _SensorID, uint16_t _ADC_ID, uint16_t _ADC_GAIN_MODE)
     : mSensorName(_SensorName), mSensorID(_SensorID), mADC_ID(_ADC_ID)
 {
-    ADCcovert(_ADC_GAIN_MODE);
+    initializeVoltagePerBit(_ADC_GAIN_MODE);
 
     // obj declared when logger not active, could be hard to log
     Logger::Notice("Class created with gain mode: %u and V/per bit of %D", _ADC_GAIN_MODE, mVOLTAGE_PER_BIT);
 }
 
-float IADCSensor::Process()
+float IADCSensor::Process() const
 {
 
-    // TODO: put Read() function here once ready, currently for testing
-    uint16_t raw_data = 5230;
+    // Random var for testing
+    uint16_t raw_data = Read();
 
     Logger::Trace("Initial Data: %u from sensor <%s> with ID: %u and ads id %u", raw_data, mSensorName, mSensorID, mADC_ID);
 
@@ -45,8 +45,15 @@ float IADCSensor::Process()
     return (float)final_data;
 }
 
+uint16_t IADCSensor::Read() const
+{
+    Logger::Error("Default Read Function Called!");
+    // variable for testing
+    return (uint16_t)5230;
+}
+
 // picks correct Voltage ber bit ration, according to the gain mode
-void IADCSensor::ADCcovert(uint16_t _ADC_GAIN_MODE)
+void IADCSensor::initializeVoltagePerBit(uint16_t _ADC_GAIN_MODE)
 {
     switch (_ADC_GAIN_MODE)
     {

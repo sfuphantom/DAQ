@@ -6,6 +6,15 @@
 
 class IADCSensor
 {
+public:
+    IADCSensor(const char *_SensorName, uint16_t _SensorID, uint16_t _ADC_ID, uint16_t _ADC_GAIN_MODE);
+
+    // Read function - to be overwritten by the Driver class
+    // When child class is ready, make abstract
+    virtual uint16_t Read() const;
+
+    float Process() const;
+
 private:
     // bit to voltage conversion factor
     float mVOLTAGE_PER_BIT;
@@ -17,15 +26,7 @@ private:
     uint32_t mSensorID;
     uint32_t mADC_ID;
 
-    void ADCcovert(uint16_t _ADC_GAIN_MODE);
-
-public:
-    IADCSensor(const char *_SensorName, uint16_t _SensorID, uint16_t _ADC_ID, uint16_t _ADC_GAIN_MODE);
-
-    // Read function - to be overwritten by the Driver class
-    virtual void Read(){};
-
-    float Process();
+    void initializeVoltagePerBit(uint16_t _ADC_GAIN_MODE);
 };
 
 #endif
