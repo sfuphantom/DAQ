@@ -15,6 +15,16 @@
 // 5 - LOG_LEVEL_TRACE      errors, warnings, notices & traces
 // 6 - LOG_LEVEL_VERBOSE    all
 
+// PROGRAMMABLE GAIN MODES OF THE ADS1115 ADC
+// TODO: CHANGE VALUES/NAMES ACCORDING TO THE ADC LIBRARY
+// AND TO SYNC WITH THE DRIVER CLASS
+#define GAIN_TWOTHIRDS 0
+#define GAIN_ONE 1
+#define GAIN_TWO 2
+#define GAIN_FOUR 3
+#define GAIN_EIGHT 4
+#define GAIN_SIXTEEN 5
+
 // Baud Rate variable
 uint32_t constexpr BAUD_RATE = 9600;
 
