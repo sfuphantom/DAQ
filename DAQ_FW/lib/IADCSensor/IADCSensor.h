@@ -29,8 +29,8 @@ private:
     // Currently Generic Parameters, to be expanded as needed
     // TODO: add more specific data, depends on the sensors
     const char *mSensorName;
-    uint32_t mSensorID;
-    uint32_t mADC_ID;
+    const uint32_t mSensorID;
+    const uint32_t mADC_ID;
 };
 
 #endif

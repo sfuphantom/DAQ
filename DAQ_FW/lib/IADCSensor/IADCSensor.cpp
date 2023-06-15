@@ -26,12 +26,13 @@ void IADCSensor::Initialize()
 {
     if (!mADS.begin(ADS1X15_ADDRESS))
     {
-        Logger::Error("Failed to start ads");
         while (1)
-            ;
+        {
+            Logger::Error("Failed to start ads with ID: %u", mADC_ID);
+        }
     }
     else
-        Logger::Notice("ADC initialized");
+        Logger::Notice("ADC %u initialized", mADC_ID);
 }
 
 float IADCSensor::Process()
@@ -56,13 +57,14 @@ int16_t IADCSensor::Read()
 {
     Logger::Error("Default Read Function Called!");
     // testing read function - NOT FINAL
-    int16_t adc0 = mADS.readADC_SingleEnded(0);
+    int16_t adcBitData = mADS.readADC_SingleEnded(0);
 
-    if (!adc0)
+    if (!adcBitData)
     {
-        Logger::Warning("No Input Detected");
+        Logger::Warning("No Input Detected from sensor <%s> with ID: %u and adc id %u",
+                        mSensorName, mSensorID, mADC_ID);
         return 0;
     }
 
-    return (int16_t)adc0;
+    return (int16_t)adcBitData;
 }
