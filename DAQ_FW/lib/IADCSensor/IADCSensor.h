@@ -9,10 +9,9 @@
 class IADCSensor
 {
 public:
-    IADCSensor(const char *_SensorName, uint16_t _SensorID, uint16_t _ADC_ID);
+    IADCSensor(const char *_SensorName, const uint16_t _SensorID, const ADCAddress _ADCAddress);
 
     // call in setup(), initializes the adc
-    // TODO: may need to be changed as we will have multiple sensors on single adc
     // needs to be hardware tested
     void Initialize();
 
@@ -22,6 +21,9 @@ public:
 
     float Process();
 
+    // for logging the address of the current ADC
+    const char *PrintAddress();
+
 private:
     Adafruit_ADS1115 mADS;
 
@@ -30,7 +32,7 @@ private:
     // TODO: add more specific data, depends on the sensors
     const char *mSensorName;
     const uint32_t mSensorID;
-    const uint32_t mADC_ID;
+    const ADCAddress mADC_Address;
 };
 
 #endif

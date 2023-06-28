@@ -18,21 +18,21 @@
 // CLASS METHODS:
 
 // Default constructor with generic metadata
-IADCSensor::IADCSensor(const char *_SensorName, uint16_t _SensorID, uint16_t _ADC_ID)
-    : mSensorName(_SensorName), mSensorID(_SensorID), mADC_ID(_ADC_ID) {}
+IADCSensor::IADCSensor(const char *_SensorName, const uint16_t _SensorID, const ADCAddress _ADCAddress)
+    : mSensorName(_SensorName), mSensorID(_SensorID), mADC_Address(_ADCAddress) {}
 
 // ADS1115 initialize func, to be called on setup()
 void IADCSensor::Initialize()
 {
-    if (!mADS.begin(ADS1X15_ADDRESS))
+    if (!mADS.begin(static_cast<uint8_t>(mADC_Address)))
     {
         while (1)
         {
-            Logger::Error("Failed to start ads with ID: %u", mADC_ID);
+            Logger::Error("Failed to start ads with ID: %s", PrintAddress());
         }
     }
     else
-        Logger::Notice("ADC %u initialized", mADC_ID);
+        Logger::Notice("ADC %s initialized", PrintAddress());
 }
 
 float IADCSensor::Process()
@@ -40,7 +40,8 @@ float IADCSensor::Process()
     // gets bit data from the adc
     int16_t raw_data = Read();
 
-    Logger::Trace("Initial Data: %u from sensor <%s> with ID: %u and ads id %u", raw_data, mSensorName, mSensorID, mADC_ID);
+    Logger::Trace("Initial Data: %u from sensor <%s> with ID: %u and ads component %s",
+                  raw_data, mSensorName, mSensorID, PrintAddress());
 
     // processing code goes here - to be done for different sensor types
     // converts voltage to sensor data, include warnings, errors
@@ -48,7 +49,8 @@ float IADCSensor::Process()
     // adc bit to voltage conversion, gain mode can be set via the adc library
     float final_data = mADS.computeVolts(raw_data);
 
-    Logger::Notice("Processed Data: %D, from sensor <%s> with ID: %u and adc id %u", final_data, mSensorName, mSensorID, mADC_ID);
+    Logger::Notice("Processed Data: %D, from sensor <%s> with ID: %u and adc component %s",
+                   final_data, mSensorName, mSensorID, PrintAddress());
 
     return (float)final_data;
 }
@@ -61,10 +63,27 @@ int16_t IADCSensor::Read()
 
     if (!adcBitData)
     {
-        Logger::Warning("No Input Detected from sensor <%s> with ID: %u and adc id %u",
-                        mSensorName, mSensorID, mADC_ID);
+        Logger::Warning("No Input Detected from sensor <%s> with ID: %u and adc component %s",
+                        mSensorName, mSensorID, PrintAddress());
         return 0;
     }
 
     return (int16_t)adcBitData;
+}
+
+const char *IADCSensor::PrintAddress()
+{
+    switch (mADC_Address)
+    {
+    case ADCAddress::U1:
+        return "U1";
+    case ADCAddress::U2:
+        return "U2";
+    case ADCAddress::U3:
+        return "U3";
+    case ADCAddress::U4:
+        return "U4";
+    default:
+        return "<Error, invalid Address>";
+    }
 }

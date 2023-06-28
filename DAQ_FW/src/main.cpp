@@ -3,8 +3,8 @@
 
 // object declarations can't be done in setup()
 
-// params: sensorname, sensorID, adcID
-IADCSensor SensorTest("TestSensor", 1, 0);
+// params: sensorname, sensorID, adcAddress
+IADCSensor SensorTest("TestSensor", 1, ADCAddress::U1);
 
 void setup()
 {

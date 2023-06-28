@@ -4,6 +4,15 @@
 #include <Arduino.h>
 #include <stdarg.h>
 
+// I2C Addressess for the ADS1115 connection
+enum class ADCAddress
+{
+    U1 = 0x48,
+    U2 = 0x49,
+    U3 = 0x4A,
+    U4 = 0x4B
+};
+
 // DAQ global Log Level Setup Filter
 #define CURRENT_LOG_LEVEL LOG_LEVEL_VERBOSE
 // Options:
