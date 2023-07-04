@@ -4,7 +4,7 @@
 // object declarations can't be done in setup()
 
 // params: sensorname, sensorID, adcAddress
-IADCSensor SensorTest("TestSensor", 1, ADCAddress::U1);
+ChildExample SensorTest("TestSensor", 1, ADCAddress::U1);
 
 void setup()
 {
@@ -20,7 +20,7 @@ void loop()
   // put your main code here, to run repeatedly:
   Logger::Notice("Hello World");
 
-  SensorTest.Process();
+  SensorTest.GetData();
 
   delay(1000);
 }

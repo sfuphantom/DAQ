@@ -15,11 +15,14 @@ public:
     // needs to be hardware tested
     void Initialize();
 
-    // Read function - to be overwritten by the Driver class
-    // When child class is ready, make abstract
-    virtual int16_t Read();
+    // Reads 16 bits of data from the current mADC
+    int16_t Read();
 
-    float Process();
+    float GetData();
+
+    // processing code goes here - to be overwritten for different sensor types
+    // converts voltage to sensor data, include warnings, errors
+    virtual float Process(float inputData) = 0;
 
     // for logging the address of the current ADC
     const char *PrintAddress();
@@ -33,6 +36,15 @@ private:
     const char *mSensorName;
     const uint32_t mSensorID;
     const ADCAddress mADC_Address;
+};
+
+// example implementation of the senor child class
+class ChildExample : public IADCSensor
+{
+public:
+    ChildExample(const char *_SensorName, const uint16_t _SensorID, const ADCAddress _ADCAddress)
+        : IADCSensor(_SensorName, _SensorID, _ADCAddress) {}
+    float Process(float InputData);
 };
 
 #endif

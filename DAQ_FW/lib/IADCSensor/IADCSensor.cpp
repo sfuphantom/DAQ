@@ -35,7 +35,7 @@ void IADCSensor::Initialize()
         Logger::Notice("ADC %s initialized", PrintAddress());
 }
 
-float IADCSensor::Process()
+float IADCSensor::GetData()
 {
     // gets bit data from the adc
     int16_t raw_data = Read();
@@ -43,11 +43,8 @@ float IADCSensor::Process()
     Logger::Trace("Initial Data: %u from sensor <%s> with ID: %u and ads component %s",
                   raw_data, mSensorName, mSensorID, PrintAddress());
 
-    // processing code goes here - to be done for different sensor types
-    // converts voltage to sensor data, include warnings, errors
-
     // adc bit to voltage conversion, gain mode can be set via the adc library
-    float final_data = mADS.computeVolts(raw_data);
+    float final_data = Process(mADS.computeVolts(raw_data)); // Process is overidden by the child class
 
     Logger::Notice("Processed Data: %D, from sensor <%s> with ID: %u and adc component %s",
                    final_data, mSensorName, mSensorID, PrintAddress());
@@ -57,7 +54,7 @@ float IADCSensor::Process()
 
 int16_t IADCSensor::Read()
 {
-    Logger::Error("Default Read Function Called!");
+
     // testing read function - NOT FINAL
     int16_t adcBitData = mADS.readADC_SingleEnded(0);
 
@@ -69,6 +66,12 @@ int16_t IADCSensor::Read()
     }
 
     return (int16_t)adcBitData;
+}
+
+float ChildExample::Process(float InputData)
+{
+    Logger::Error("Using example class");
+    return InputData;
 }
 
 const char *IADCSensor::PrintAddress()
