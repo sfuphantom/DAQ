@@ -4,6 +4,15 @@
 #include <Arduino.h>
 #include <stdarg.h>
 
+// I2C Addressess for the ADS1115 connection
+enum class ADCAddress
+{
+    U1 = 0x48,
+    U2 = 0x49,
+    U3 = 0x4A,
+    U4 = 0x4B
+};
+
 // DAQ global Log Level Setup Filter
 #define CURRENT_LOG_LEVEL LOG_LEVEL_VERBOSE
 // Options:
@@ -15,15 +24,9 @@
 // 5 - LOG_LEVEL_TRACE      errors, warnings, notices & traces
 // 6 - LOG_LEVEL_VERBOSE    all
 
-// PROGRAMMABLE GAIN MODES OF THE ADS1115 ADC
-// TODO: CHANGE VALUES/NAMES ACCORDING TO THE ADC LIBRARY
-// AND TO SYNC WITH THE DRIVER CLASS
-#define GAIN_TWOTHIRDS 0
-#define GAIN_ONE 1
-#define GAIN_TWO 2
-#define GAIN_FOUR 3
-#define GAIN_EIGHT 4
-#define GAIN_SIXTEEN 5
+// Defines global decimal places when displaying floats and doubles ('%D' AND '%F')
+// param goes to ArduinoLog.cpp line 192: _logOutput->print(va_arg(*args, double), LOG_DECIMAL_PLACES);
+#define LOG_DECIMAL_PLACES 5
 
 // Baud Rate variable
 uint32_t constexpr BAUD_RATE = 9600;
