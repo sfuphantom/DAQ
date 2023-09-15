@@ -1,87 +1,158 @@
 #include <Arduino.h>
 #include <iostream>
 
-#define temp_PIN 4 // pin numbers
-#define brakePressure_PIN 5
-#define coolantPressure_PIN 6
+#define frontLeft_WSPIN 14
+#define frontRight_WSPIN 16
+#define backLeft_WSPIN 18
+#define backRight_WSPIN 20
 
-#define wheelSpeed_PIN 14
+int volatile WP1=0; // set at random number for testing
+int volatile WP2=0; // set at random number for testing
+int volatile WP3=0; // set at random number for testing
+int volatile WP4=0; // set at random number for testing
 
-#define tempConst 5 // adjustable temperature proportionality constant for testing
+int volatile irFlag1 = 0; 
+int volatile irFlag2 = 0; 
+int volatile irFlag3 = 0; 
+int volatile irFlag4 = 0; 
 
-uint16_t wheelPulses=120; // set at random number for testing
-
-void IRAM_ATTR ISR(){ // interrupt service routine
-  wheelPulses ++; 
+void IRAM_ATTR ISR1(){ // interrupt service routine
+   irFlag1 = 1;
+   WP1++;
 }
 
+void IRAM_ATTR ISR2(){ // interrupt service routine
+   irFlag2 = 1;
+   WP2++;
+}
+
+void IRAM_ATTR ISR3(){ // interrupt service routine
+   irFlag3 = 1;
+   WP3++;
+}
+
+void IRAM_ATTR ISR4(){ // interrupt service routine
+   irFlag4 = 1;
+   WP4++;
+}
+
+void interruptReset1(){
+  detachInterrupt(frontLeft_WSPIN);
+  
+  irFlag1 = 0;
+  WP1= 0;
+
+  attachInterrupt(frontLeft_WSPIN, ISR1, FALLING);
+};
+
+void interruptReset2(){
+  detachInterrupt(frontRight_WSPIN);
+  
+  irFlag2 = 0;
+  WP2= 0;
+
+  attachInterrupt(frontRight_WSPIN, ISR2, FALLING);
+};
+
+void interruptReset3(){
+  detachInterrupt(backLeft_WSPIN);
+  
+  irFlag3 = 0;
+  WP3= 0;
+
+  attachInterrupt(backLeft_WSPIN, ISR3, FALLING);
+};
+
+void interruptReset4(){
+  detachInterrupt(backRight_WSPIN);
+  
+  irFlag4 = 0;
+  WP4= 0;
+
+  attachInterrupt(backRight_WSPIN, ISR4, FALLING);
+};
+
 void setup() {
-  // put your setup code here, to run once:
-  /*pinMode(temp_PIN, OUTPUT);
-  pinMode(brakePressure_PIN, OUTPUT);
-  pinMode(coolantPressure_PIN, OUTPUT); */
-  pinMode(wheelSpeed_PIN, OUTPUT);
+  pinMode(frontRight_WSPIN, INPUT);
 
   // attach interrupt that adds to pulse count when pin goes from HIGH to LOW
-  attachInterrupt(wheelSpeed_PIN, ISR, FALLING); 
+  attachInterrupt(frontLeft_WSPIN, ISR1, FALLING); 
+  attachInterrupt(frontRight_WSPIN, ISR2, FALLING); 
+  attachInterrupt(backLeft_WSPIN, ISR3, FALLING); 
+  attachInterrupt(backRight_WSPIN, ISR4, FALLING); 
+
 
   Serial.begin(9600);
   Serial.println("Connected");
+
+  
 };
 
 void loop() {
-  //------------- functions for temperature and pressure sensors ------------//
-
-  //int tempData = analogRead(temp_PIN);
-  //int brakePressureData = analogRead(brakePressure_PIN);
-  //int tirePressureData = analogRead(coolantPressure_PIN);
-
-  // example implementation of functions
-  // data = brakePressure(data); 
-
-  // for tempurature sensors - analog reading is directly proportional to temperature in deg-C
-  //uint16_t temperature = tempData*tempConst; 
-
-  //for brake pressure sensor (MIPAN2XX500PSAAX) 
-  //uint16_t brakePressure = 625*(brakePressureData-0.5); // in PSI, V_supply @ 25 deg-C = 5V (ratiometric)  //display data
-
-  //for coolant pressure sensor (116CP31-M04S2-50)
-  //uint16_t tirePressure = 20*(tirePressureData-0.5);
-
-  // for wheel speed sensor
-  //wheelPulses = 0; // start at 0 
-
-  //Serial.print("Temperature reading= ");
-  //Serial.println(temperature);
-
-  //Serial.print("Brake pressure reading= ");
-  //Serial.println(brakePressure);
-  
-  //Serial.print("Tire pressure reading= ");
-  //Serial.println(tirePressure);
-
   //-------------- wheel speed interrupt data --------------//
+  if(irFlag1){
+    delay(1000); // interrupt detects pulses over 1000ms
 
-  delay(1000); // interrupt detects pulses over 1000ms
-  uint16_t wheelRPM = wheelPulses/20*60; //  20 pulses from wheel speed sensor corresponds to 1 revolution
-
-  Serial.print("Wheel speed (RPM)= ");
-  Serial.println(wheelRPM);
-
-  //-------------- wheel speed sensor testing --------------//
-
-  int wheelSpeedData = analogRead(wheelSpeed_PIN);
-
+    int RPM1 = WP1/49*60; //  20 pulses from wheel speed sensor corresponds to 1 revolution
   
-  if (wheelSpeedData == 1){
-      Serial.println("Unblocked"); //test
-  }; 
-  
-  if (wheelSpeedData==0){
-      Serial.println("Blocked"); //test
+    Serial.println(WP1);
+    Serial.print("Wheel 1 Speed (RPM)= ");
+    Serial.println(RPM1);
+
+
+    interruptReset1();
   };
 
-  //Serial.println(wheelPulses);
+    if(irFlag1){
+    delay(1000); // interrupt detects pulses over 1000ms
 
+    int RPM1 = WP1/49*60; //  20 pulses from wheel speed sensor corresponds to 1 revolution
+  
+    Serial.println(WP1);
+    Serial.print("Wheel 1 Speed (RPM)= ");
+    Serial.println(RPM1);
+
+
+    interruptReset1();
   };
 
+    if(irFlag2){
+    delay(1000); // interrupt detects pulses over 1000ms
+
+    int RPM2 = WP2/49*60; //  20 pulses from wheel speed sensor corresponds to 1 revolution
+  
+    Serial.println(WP2);
+    Serial.print("Wheel 2 Speed (RPM)= ");
+    Serial.println(RPM2);
+
+
+    interruptReset2();
+  };
+
+    if(irFlag3){
+    delay(1000); // interrupt detects pulses over 1000ms
+
+    int RPM3 = WP1/49*60; //  20 pulses from wheel speed sensor corresponds to 1 revolution
+  
+    Serial.println(WP3);
+    Serial.print("Wheel 3 Speed (RPM)= ");
+    Serial.println(RPM3);
+
+
+    interruptReset1();
+  };
+
+    if(irFlag4){
+    delay(1000); // interrupt detects pulses over 1000ms
+
+    int RPM4 = WP4/49*60; //  20 pulses from wheel speed sensor corresponds to 1 revolution
+  
+    Serial.println(WP4);
+    Serial.print("Wheel 4 Speed (RPM)= ");
+    Serial.println(RPM4);
+
+
+    interruptReset4();
+  };
+
+};
