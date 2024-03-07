@@ -115,16 +115,14 @@ void loop() {
   if (timerCounter > 0){
     timerCounter --;
 
-    wheelSpeedDisplay(WP1, 1);
+    wheelSpeedDisplay(WP1, WP2, WP3, WP4); // prints velocity based on average wheel pulse counts
+
+
+    // detach/reattach interrupts
+    
     interruptReset1();
-
-    wheelSpeedDisplay(WP2, 2);
     interruptReset2();
-
-    wheelSpeedDisplay(WP3, 3);
     interruptReset3();
-
-    wheelSpeedDisplay(WP4, 4);
     interruptReset4();
     };
 }
