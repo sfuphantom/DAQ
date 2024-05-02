@@ -74,6 +74,24 @@ float ChildExample::Process(float InputData)
     return InputData;
 }
 
+float CoolantPressureSensor::Process(float inputData)
+{
+    float pressure = convertToPressure(inputData);
+    return pressure;
+}
+
+float CoolantPressureSensor::convertToPressure(float inputData)
+{
+    float pressure = (inputData - 0.5) / 3.0;
+
+    // pressure range in bars
+    float minPressure = 0.0;
+    float maxPressure = 4.0; 
+
+    // using linear interpolation
+    return pressure * (maxPressure - minPressure) + minPressure;
+}
+
 const char *IADCSensor::PrintAddress()
 {
     switch (mADC_Address)
