@@ -47,4 +47,17 @@ public:
     float Process(float InputData);
 };
 
+class CoolantPressureSensor : public IADCSensor
+{
+    public:
+        CoolantPressureSensor(const char *_SensorName, const uint16_t _SensorID, const ADCAddress _ADCAddress)
+            : IADCSensor(_SensorName, _SensorID, _ADCAddress) {}
+        
+        // convert ADC readings to pressure values
+        float Process(float inputData) override; 
+
+    private:
+        float convertToPressure(float inputData);
+};
+
 #endif
