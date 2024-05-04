@@ -6,6 +6,12 @@
 // params: sensorname, sensorID, adcAddress
 ChildExample SensorTest("TestSensor", 1, ADCAddress::U1);
 
+// cooloant pressure sensor object decleration
+CoolantPressureSensor CoolantPressure("CoolantPressureSensor", 2, ADCAddress::U1);
+
+// coolant tempature sensor object decleration
+CoolantTemperatureSensor CoolantTemperature("CoolantTemperature Sensor", 2, ADCAddress::U1);
+
 void setup()
 {
   // put your setup code here, to run once:
@@ -13,6 +19,10 @@ void setup()
   Logger::Notice("Setup");
 
   SensorTest.Initialize();
+
+  CoolantPressure.Initialize();
+
+  CoolantTemperature.Initialize();
 }
 
 void loop()
@@ -21,6 +31,10 @@ void loop()
   Logger::Notice("Hello World");
 
   SensorTest.GetData();
+
+  CoolantPressure.GetData();
+
+  CoolantTemperature.GetData();
 
   delay(1000);
 }
