@@ -41,9 +41,7 @@ void loop()
   CoolantTemperature.GetData();
 
   
-  IMU.getTempData(lsm6ds3trc);
-  IMU.getAccelData(lsm6ds3trc);
-  IMU.getGyroData(lsm6ds3trc);
+  IMU.getTempAccelGyroData(lsm6ds3trc);
 
   delay(1000);
 }

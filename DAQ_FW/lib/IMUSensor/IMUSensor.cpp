@@ -142,17 +142,16 @@ void IMU_Sensor::initialize(void){
   lsm6ds3trc.configInt2(false, true, false); // gyro DRDY on INT2
 }
 
-void IMU_Sensor::getTempData(Adafruit_LSM6DS3TRC lsm6ds3trc){
+void IMU_Sensor::getTempAccelGyroData(Adafruit_LSM6DS3TRC lsm6ds3trc){
+    sensors_event_t accel;
+    sensors_event_t gyro;
     sensors_event_t temp;
-    lsm6ds3trc.getEvent(&temp);
+    lsm6ds3trc.getEvent(&accel, &gyro, &temp);
+
     Serial.print("\t\tTemperature ");
     Serial.print(temp.temperature);
     Serial.println(" deg C");
-}
 
-void IMU_Sensor::getAccelData(Adafruit_LSM6DS3TRC lsm6ds3trc){
-    sensors_event_t accel;
-    lsm6ds3trc.getEvent(&accel);
     /* Display the results (acceleration is measured in m/s^2) */
     Serial.print("\t\tAccel X: ");
     Serial.print(accel.acceleration.x);
@@ -161,11 +160,7 @@ void IMU_Sensor::getAccelData(Adafruit_LSM6DS3TRC lsm6ds3trc){
     Serial.print(" \tZ: ");
     Serial.print(accel.acceleration.z);
     Serial.println(" m/s^2 ");
-}
 
-void IMU_Sensor::getGyroData(Adafruit_LSM6DS3TRC lsm6ds3trc){
-    sensors_event_t gyro;
-    lsm6ds3trc.getEvent(&gyro);
     /* Display the results (rotation is measured in rad/s) */
     Serial.print("\t\tGyro X: ");
     Serial.print(gyro.gyro.x);
