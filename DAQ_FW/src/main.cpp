@@ -32,7 +32,7 @@ void loop()
   // put your main code here, to run repeatedly:
   Logger::Notice("Hello World");
 
-  SensorTest.GetData();
+  //SensorTest.GetData();
 
   //CoolantPressure.GetData();
 
