@@ -8,10 +8,10 @@
 ChildExample SensorTest("TestSensor", 1, ADCAddress::U1);
 
 // cooloant pressure sensor object decleration
-CoolantPressureSensor CoolantPressure("CoolantPressureSensor", 2, ADCAddress::U1);
+//CoolantPressureSensor CoolantPressure("CoolantPressureSensor", 2, ADCAddress::U1);
 
 // coolant tempature sensor object decleration
-CoolantTemperatureSensor CoolantTemperature("CoolantTemperature Sensor", 2, ADCAddress::U1);
+//CoolantTemperatureSensor CoolantTemperature("CoolantTemperature Sensor", 2, ADCAddress::U1);
 
 void setup()
 {
