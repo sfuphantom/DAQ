@@ -1,43 +1,40 @@
-#include "Logger.h"
-#include "IADCSensor.h"
-#include "wheelSpeed.h"
+#include <Wire.h>
 
-// object declarations can't be done in setup()
-
-// params: sensorname, sensorID, adcAddress
-ChildExample SensorTest("TestSensor", 1, ADCAddress::U1);
-
-// cooloant pressure sensor object decleration
-//CoolantPressureSensor CoolantPressure("CoolantPressureSensor", 2, ADCAddress::U1);
-
-// coolant tempature sensor object decleration
-//CoolantTemperatureSensor CoolantTemperature("CoolantTemperature Sensor", 2, ADCAddress::U1);
-
-void setup()
-{
-  // put your setup code here, to run once:
-  Logger::Start();
-  Logger::Notice("Setup");
-  WheelSpeedSetup();
-
-  //SensorTest.Initialize();
-
-  //CoolantPressure.Initialize();
-
-  //CoolantTemperature.Initialize();
+void setup() {
+  Wire.begin(); // Initialize the I2C bus
+  Serial.begin(9600); // Start the serial communication for output
+  while (!Serial); // Wait for the serial monitor to open
+  Serial.println("\nI2C Scanner");
 }
 
-void loop()
-{
-  // put your main code here, to run repeatedly:
-  Logger::Notice("Hello World");
+void loop() {
+  byte error, address;
+  int nDevices = 0;
 
-  //SensorTest.GetData();
+  Serial.println("Scanning...");
 
-  //CoolantPressure.GetData();
+  for (address = 1; address < 127; address++) {
+    // Try to connect to each I2C address
+    Wire.beginTransmission(address);
+    error = Wire.endTransmission();
 
-  //CoolantTemperature.GetData();
+    if (error == 0) {
+      Serial.print("I2C device found at address 0x");
+      if (address < 16)
+        Serial.print("0");
+      Serial.println(address, HEX);
+      nDevices++;
+    } else if (error == 4) {
+      Serial.print("Unknown error at address 0x");
+      if (address < 16)
+        Serial.print("0");
+      Serial.println(address, HEX);
+    }
+  }
+  if (nDevices == 0)
+    Serial.println("No I2C devices found\n");
+  else
+    Serial.println("done\n");
 
-  WheelSpeedReset();
-  delay(1000);
+  delay(5000); // Wait 5 seconds before next scan
 }
