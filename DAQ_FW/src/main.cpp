@@ -32,40 +32,6 @@ ChildExample SensorTest("TestSensor", 1, ADCAddress::U1);
 
 bool faultDetected = false;
 
-// CAN initilization
-void CanDriver::CanInit() {
-    can_general_config_t general_config = {
-        .mode = CAN_MODE_NORMAL,
-        .tx_io = CAN_TX,
-        .rx_io = CAN_RX,
-        .clkout_io = CAN_IO_UNUSED,
-        .bus_off_io = CAN_IO_UNUSED,
-        .tx_queue_len = 65,
-        .rx_queue_len = 65,
-        .alerts_enabled = CAN_ALERT_ALL,
-        .clkout_divider = 0
-    };
-
-    can_timing_config_t timing_config = CAN_TIMING_CONFIG_250KBITS();
-    can_filter_config_t filter_config = CAN_FILTER_CONFIG_ACCEPT_ALL();
-
-    esp_err_t error = can_driver_install(&general_config, &timing_config, &filter_config);
-
-    if (error == ESP_OK) {
-        Logger::Notice("CAN Driver Installation OK");
-    } else {
-        Logger::Error("CAN Driver Installation Failed");
-        while (1) {} // Halt execution on failure
-    }
-
-    error = can_start();
-    if (error == ESP_OK) {
-        Logger::Notice("CAN Driver Started");
-    } else {
-        Logger::Error("CAN Driver Failed to Start");
-        while (1) {}
-    }
-}
 
 void sendFaultSignal(bool faultDetected) {
     twai_message_t faultMessage;
@@ -75,9 +41,38 @@ void sendFaultSignal(bool faultDetected) {
     faultMessage.data[0] = faultDetected ? 1 : 0;
 
     if (twai_transmit(&faultMessage, pdMS_TO_TICKS(1000)) == ESP_OK) {
-        Logger::Notice(faultDetected ? "Fault signal sent successfully" : "No fault detected, signal sent.");
+        Logger::Notice(faultDetected ? "Fault signal sent successfully" : "No fault detected, signal sent");
     } else {
         Logger::Error("Failed to send fault signal");
+    }
+}
+
+void sendWheelSpeeds(float frontLeft, float frontRight, float rearLeft, float rearRight) {
+    twai_message_t wheelMessage;
+    wheelMessage.identifier = WHEEL_MSG_ID; 
+    wheelMessage.extd = 0;                   // 11-bit ID
+    wheelMessage.data_length_code = 8;       // 8 bytes of data (2 bytes per wheel)
+    
+    // preserving 2 decimal places
+    int16_t fl = (int16_t)(frontLeft * 100);
+    int16_t fr = (int16_t)(frontRight * 100);
+    int16_t rl = (int16_t)(rearLeft * 100);
+    int16_t rr = (int16_t)(rearRight * 100);
+    
+    // extracting upper and lower bytes 
+    wheelMessage.data[0] = (uint8_t)(fl >> 8);    
+    wheelMessage.data[1] = (uint8_t)(fl & 0xFF);  
+    wheelMessage.data[2] = (uint8_t)(fr >> 8);   
+    wheelMessage.data[3] = (uint8_t)(fr & 0xFF);  
+    wheelMessage.data[4] = (uint8_t)(rl >> 8);    
+    wheelMessage.data[5] = (uint8_t)(rl & 0xFF);  
+    wheelMessage.data[6] = (uint8_t)(rr >> 8);    
+    wheelMessage.data[7] = (uint8_t)(rr & 0xFF);  
+    
+    if (twai_transmit(&wheelMessage, pdMS_TO_TICKS(1000)) == ESP_OK) {
+        Logger::Notice("Wheel speeds sent successfully");
+    } else {
+        Logger::Error("Failed to send wheel speeds");
     }
 }
 
@@ -110,6 +105,7 @@ void loop()
     }
 
   sendFaultSignal(faultDetected);
+  sendWheelSpeeds(fl, fr, rl, rr);
   
   WheelSpeedReset();
   delay(1000);
