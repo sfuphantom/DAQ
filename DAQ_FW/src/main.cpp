@@ -3,14 +3,12 @@
 #include "wheelSpeed.h"
 #include <Arduino.h>
 #include <driver/twai.h>
-#include "CanDriver.h"
 #include "stdlib.h"
-#include "time.h"
 
-MAX_TEMP = 4
-MIN_TEMP =  2
-MIN_PRESSURE = 1.3 
-MAX_PRESSURE = 1.7 
+// MAX_TEMP = 4 write in define
+// MIN_TEMP =  2
+// MIN_PRESSURE = 1.3 
+// MAX_PRESSURE = 1.7 
 
 #define FAULT_MSG_ID 0x100
 #define WHEEL_MSG_ID 0x200
@@ -80,10 +78,10 @@ void setup()
 {
   Logger::Start();
   Logger::Notice("Setup");
-  WheelSpeedSetup();
-  CanDriver::CanInit();
+  //WheelSpeedSetup();
+  // CanDriver::CanInit();
 
-  //SensorTest.Initialize();
+  SensorTest.Initialize();
   //CoolantPressure.Initialize();
   //CoolantTemperature.Initialize();
 }
@@ -93,20 +91,20 @@ void loop()
 {
   Logger::Notice("Hello World");
 
-  //SensorTest.GetData();
+  SensorTest.GetData();
   //float pressure = CoolantPressure.GetData();
   //float temp = CoolantTemperature.GetData();
 
-  if (pressure < MIN_PRESSURE || pressure > MAX_PRESSURE || temp < MIN_TEMP || temp > MAX_TEMP){
-    Logger::Error("Fault detected! Sending fault signal.");
-    faultDetected = true; 
-  } else {
-        faultDetected = false;
-    }
+  // if (pressure < MIN_PRESSURE || pressure > MAX_PRESSURE || temp < MIN_TEMP || temp > MAX_TEMP){
+  //   Logger::Error("Fault detected! Sending fault signal.");
+  //   faultDetected = true; 
+  // } else {
+  //       faultDetected = false;
+  //   }
 
-  sendFaultSignal(faultDetected);
-  sendWheelSpeeds(fl, fr, rl, rr);
+  // sendFaultSignal(faultDetected);
+  // sendWheelSpeeds(fl, fr, rl, rr);
   
-  WheelSpeedReset();
+  //WheelSpeedReset();
   delay(1000);
 }
