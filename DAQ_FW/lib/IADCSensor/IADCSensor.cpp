@@ -56,7 +56,7 @@ int16_t IADCSensor::Read()
 {
 
     // testing read function - NOT FINAL
-    int16_t adcBitData = mADS.readADC_SingleEnded(0);
+    int16_t adcBitData = mADS.readADC_SingleEnded(mSensorID);
 
     if (!adcBitData)
     {
@@ -90,3 +90,49 @@ const char *IADCSensor::PrintAddress()
         return "<Error, invalid Address>";
     }
 }
+
+float CoolantPressureSensor::Process(float inputData)
+{
+    float pressure = convertToPressure(inputData);
+    return pressure;
+}
+
+float CoolantPressureSensor::convertToPressure(float inputData)
+{
+    float pressure = (inputData - 0.5) / 3.0;
+
+    // pressure range in bars
+    float minPressure = 0.0;
+    float maxPressure = 4.0; 
+    // using linear interpolation
+    return pressure * (maxPressure - minPressure) + minPressure;
+}
+
+float CoolantTemperatureSensor::Process(float inputData)
+{
+    float temperature = convertToTemperature(inputData);
+    return temperature;
+}
+
+float CoolantTemperatureSensor::convertToTemperature(float inputData)
+{
+    const float beta = 34535; // K
+
+    const float R25 = 10000; // resistance of sensor at 25°C
+
+    // steinhart-Hart equation coefficients
+    const float A = 0.001125308852122; // 1/B (B is beta value)
+    const float B = 0.000234711863267; // 1/C (C is reference temperature in Kelvin)
+
+    // refrenece temp in Kelvin
+    const float Tref = 298.15; // 25°C in Kelvin
+
+    // resistance at input temperature using Steinhart-Hart equation
+    float resistance = R25 * exp(A * (1 / (inputData + 273.15) - 1 / Tref));
+
+    // converting resistance to temperature using Steinhart-Hart equation
+    float temperature = 1 / (B * log(resistance / R25)) - 273.15;
+ 
+    return temperature;
+}
+
