@@ -3,6 +3,15 @@
 #include "wheelSpeed.h"
 #include <Arduino.h>
 #include <driver/twai.h>
+
+#include <SD.h>
+#include <time.h>
+
+// NTP server and timezone
+const char *ntpServer = "pool.ntp.org";
+const long gmtOffset_sec = -28800;          // GMT-8 (Pacific Standard Time)
+const int daylightOffset_sec = 3600;        // Adjust for daylight savings (1h right now)
+
 #include "stdlib.h"
 
 // MAX_TEMP = 4 write in define
@@ -16,6 +25,8 @@
 // CAN pins
 #define CAN_TX GPIO_NUM_21
 #define CAN_RX GPIO_NUM_22
+
+#define SD_CS_PIN 5  // GPIO for SD card Chip Select, Connect to any GPIO 
 
 // object declarations can't be done in setup()
 
@@ -31,19 +42,6 @@ ChildExample SensorTest("TestSensor", 1, ADCAddress::U1);
 bool faultDetected = false;
 
 
-void sendFaultSignal(bool faultDetected) {
-    twai_message_t faultMessage;
-    faultMessage.identifier = FAULT_MSG_ID;
-    faultMessage.extd = 0;                 // Standard ID
-    faultMessage.data_length_code = 1;     // 1 byte of data
-    faultMessage.data[0] = faultDetected ? 1 : 0;
-
-    if (twai_transmit(&faultMessage, pdMS_TO_TICKS(1000)) == ESP_OK) {
-        Logger::Notice(faultDetected ? "Fault signal sent successfully" : "No fault detected, signal sent");
-    } else {
-        Logger::Error("Failed to send fault signal");
-    }
-}
 
 void sendWheelSpeeds(float frontLeft, float frontRight, float rearLeft, float rearRight) {
     twai_message_t wheelMessage;
@@ -84,6 +82,31 @@ void setup()
   SensorTest.Initialize();
   //CoolantPressure.Initialize();
   //CoolantTemperature.Initialize();
+
+  // Initilize CD card
+  if (!SD.begin(SD_CS_PIN)) {
+    Logger::Error("Failed to initialize SD card");
+    while (1);  
+
+  Logger::Notice("SD card initialized");
+
+  // Initialize time
+  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+  Logger::Notice("Waiting for time sync...");
+  while (!time(nullptr)) {
+    delay(1000);  
+  }
+  Logger::Notice("Time synchronized");
+ }
+
+String getTimestamp() {
+  time_t now = time(nullptr);
+  struct tm *timeInfo = localtime(&now);
+
+  char buffer[30];
+  strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", timeInfo); 
+  return String(buffer);
+ }
 }
 
 // Main
@@ -94,17 +117,39 @@ void loop()
   SensorTest.GetData();
   //float pressure = CoolantPressure.GetData();
   //float temp = CoolantTemperature.GetData();
+  
+  String timestamp = getTimestamp();
 
+  if (pressure < MIN_PRESSURE || pressure > MAX_PRESSURE || temp < MIN_TEMP || temp > MAX_TEMP){
+    Logger::Error("Fault detected! Sending fault signal.");
+    faultDetected = true; 
+  }
+
+  // Writing to CD Card
+  File pressureFile = SD.open("/pressure_data.txt", FILE_APPEND);
+  if (pressureFile) {
+    pressureFile.println(timestamp + ", " + String(pressure));
+    pressureFile.close();
+    Logger::Notice("Pressure logged: " + String(pressure));
+  } else {
+    Logger::Error("Failed to open pressure file for writing");
+  }
+
+  File temperatureFile = SD.open("/temperature_data.txt", FILE_APPEND);
+  if (temperatureFile) {
+    temperatureFile.println(timestamp + ", " + String(temp));
+    temperatureFile.close();
+    Logger::Notice("Temperature logged: " + String(temp));
+  } else {
+    Logger::Error("Failed to open temperature file for writing");
+  }
+
+  WheelSpeedReset();
   // if (pressure < MIN_PRESSURE || pressure > MAX_PRESSURE || temp < MIN_TEMP || temp > MAX_TEMP){
   //   Logger::Error("Fault detected! Sending fault signal.");
   //   faultDetected = true; 
-  // } else {
-  //       faultDetected = false;
-  //   }
-
-  // sendFaultSignal(faultDetected);
-  // sendWheelSpeeds(fl, fr, rl, rr);
   
   //WheelSpeedReset();
+
   delay(1000);
 }
