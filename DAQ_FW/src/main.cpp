@@ -50,18 +50,18 @@ void setup()
   // Initilize CD card
   if (!SD.begin(SD_CS_PIN)) {
     Logger::Error("Failed to initialize SD card");
-    while (1);  // Stop execution if SD initialization fails
-  }
+    while (1);  
+
   Logger::Notice("SD card initialized");
 
   // Initialize time
   configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
   Logger::Notice("Waiting for time sync...");
   while (!time(nullptr)) {
-    delay(1000);  // Wait for time synchronization
+    delay(1000);  
   }
   Logger::Notice("Time synchronized");
-}
+ }
 
 String getTimestamp() {
   time_t now = time(nullptr);
@@ -70,6 +70,7 @@ String getTimestamp() {
   char buffer[30];
   strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", timeInfo); 
   return String(buffer);
+ }
 }
 
 void loop()
@@ -107,20 +108,6 @@ void loop()
     Logger::Notice("Temperature logged: " + String(temp));
   } else {
     Logger::Error("Failed to open temperature file for writing");
-  }
-
-  twai_message_t faultMessage;
-  uint8_t faultSignal[] = {faultDetected ? 1 : 0}; // 1 = True
-  twai_message_t faultMessage;
-  faultMessage.identifier = FAULT_MSG_ID;  
-  faultMessage.extd = 0;                  // Standard ID
-  faultMessage.data_length_code = 1;      // 1 byte of data 
-  faultMessage.data[0] = faultSignal[0];  // Fault signal (1 or 0)
-
-  if (twai_transmit(&faultMessage, pdMS_TO_TICKS(1000)) == ESP_OK) {
-    Logger::Notice(faultDetected ? "Fault signal sent successfully" : "No fault signal sent successfully");
-  } else {
-    Logger::Error("Failed to send fault signal");
   }
 
   WheelSpeedReset();
