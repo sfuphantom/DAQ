@@ -73,12 +73,13 @@ void CanDriver::sendCanData(const char canData, const uint32_t canLen, const uin
     }
     else
     {
-        srand(time(NULL));
+        // srand(time(NULL));
         //  for non string data:
         for (int i = 0; i < canLen; i++)
         {
+            message.data[i] = (uint8_t)((canDATAint >> (i * 8)) & 0xFF);
             // printf("%d\n", randnum);
-            message.data[i] = canDATAint;
+            // message.data[i] = canDATAint;
         }
     }
 

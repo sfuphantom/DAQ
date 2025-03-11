@@ -32,41 +32,24 @@ ChildExample SensorTest("TestSensor", 1, ADCAddress::U1);
 bool faultDetected = false;
 
 
-void sendWheelSpeeds(float frontLeft, float frontRight, float rearLeft, float rearRight) {
-    // twai_message_t wheelMessage;
-    // wheelMessage.identifier = WHEEL_MSG_ID; 
-    // wheelMessage.extd = 0;                   // 11-bit ID
-    // wheelMessage.data_length_code = 8;       // 8 bytes of data (2 bytes per wheel)
-    
-    // preserving 2 decimal places
-    int16_t fl = (int16_t)(frontLeft * 100);
-    int16_t fr = (int16_t)(frontRight * 100);
-    int16_t rl = (int16_t)(rearLeft * 100);
-    int16_t rr = (int16_t)(rearRight * 100);
-    uint64_t wheel_data = (uint64_t)(wheelMessage.data)
-    // extracting upper and lower bytes 
-    // wheelMessage.data[0] = (uint8_t)(fl >> 8);    
-    // wheelMessage.data[1] = (uint8_t)(fl & 0xFF);  
-    // wheelMessage.data[2] = (uint8_t)(fr >> 8);   
-    // wheelMessage.data[3] = (uint8_t)(fr & 0xFF);  
-    // wheelMessage.data[4] = (uint8_t)(rl >> 8);    
-    // wheelMessage.data[5] = (uint8_t)(rl & 0xFF);  
-    // wheelMessage.data[6] = (uint8_t)(rr >> 8);    
-    // wheelMessage.data[7] = (uint8_t)(rr & 0xFF);  
-    
-    uint64_t wheel_data = 0;
-    wheel_data |= ((uint64_t)(uint16_t)fl << 48);
-    wheel_data |= ((uint64_t)(uint16_t)fr << 32);
-    wheel_data |= ((uint64_t)(uint16_t)rl << 16);
-    wheel_data |= ((uint64_t)(uint16_t)rr);
+void sendWheelSpeeds(float frontLeft, float frontRight, float rearLeft, float rearRight) // Has to be decoded on dashboard side
+{
+  // preserving 2 decimal places
+  int16_t fl = (int16_t)(frontLeft * 100);
+  int16_t fr = (int16_t)(frontRight * 100);
+  int16_t rl = (int16_t)(rearLeft * 100);
+  int16_t rr = (int16_t)(rearRight * 100);
 
-    CanDriver::sendCanData(NULL, 1, 2, wheel_data, false);
+  uint64_t can_data = 0;
 
-    // if (twai_transmit(&wheelMessage, pdMS_TO_TICKS(1000)) == ESP_OK) {
-    //     Logger::Notice("Wheel speeds sent successfully");
-    // } else {
-    //     Logger::Error("Failed to send wheel speeds");
-    // }
+  // Define explicit bit positions
+  can_data |= ((uint64_t)48 << 48);
+  can_data |= ((uint64_t)32 << 32);
+  can_data |= ((uint64_t)16 << 16);
+  can_data |= ((uint64_t)rr);
+
+  // Sending the whole msg as a 64 bit uint
+  CanDriver::sendCanData(NULL, 8, 0x2, can_data, true);
 }
 
 void setup()
