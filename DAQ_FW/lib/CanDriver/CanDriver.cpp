@@ -55,13 +55,30 @@ void CanDriver::CanInnit()
     }
 }
 
-void CanDriver::sendCanData(const char canData, const uint32_t canLen, const uint16_t canID, const int canDATAint, bool isStringmsg = false)
+void CanDriver::sendCanData(const char *canData, const uint32_t canLen, const uint16_t canID, const int canDATAint, bool isStringmsg)
 {
+    Logger::Notice("Entering sendCanData with msg_id: %u, data_length: %u, isFault: %d", canID, canLen, isStringmsg);
+
+    // Log the canData value
+    if (canData == nullptr) {
+        Logger::Error("Error: canData is NULL.");
+    } else {
+        Logger::Notice("canData is not NULL, first byte: %02X", (unsigned char)canData[0]);
+    }
+
+    Logger::Notice("CAN message ID: 0x%X", canID);
+
+    if (canLen == 0) {
+        Logger::Error("Error: data_length is zero, invalid data length.");
+    }
+
+    Logger::Notice("can_data (first 8 bytes): 0x%llX", canData);
+
     // NOTE: message size caps out around 10, might need to condense data
     can_message_t message;
 
     message.identifier = canID;
-    const charcanMSG = canData;
+    const char* canMSG = canData;
 
     message.flags = CAN_MSG_FLAG_NONE; // MSG_FLAG_NONE for actual use
     message.data_length_code = canLen;
