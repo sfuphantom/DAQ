@@ -5,14 +5,14 @@ The DAQ system collect, logs and transmits real-time sensor data from our vehicl
 ## Contents 
 
 - [Overview](Overview)
-- [System Context](System Context)
-- [Project Status](Project Status)
+- [System Context](System--Context)
+- [Project Status](Project--Status)
 - [Hardware](Hardware)
-- [Firmware / Software](Firmware / Software)
--  [SubsystemName additional Information](SubsystemName additional Information)
+- [Firmware/Software](Firmware/Software)
+-  [DAQ additional Information](DAQ--additional--Information)
 - [Getting Started](Getting Started)
-- [Calibration & Procedures](Calibration & Procedures)
-- [Safety & FSAE Compliance](Safety & FSAE Compliance)
+- [Calibration & Procedures](Calibration&Procedures)
+- [Safety & FSAE Compliance](Safety--FSAE--Compliance)
 - [Maintainers](Maintainers)
 - [License](License)
 
