@@ -10,6 +10,9 @@
 #define backLeft_WSPIN 34 // wheel #3
 #define backRight_WSPIN 35 // wheel #4
 
+// for getter function
+static float finalWheelSpeed = 0.0f;
+
 // hardware timer pointer
 hw_timer_t * timer = NULL;
 
@@ -21,6 +24,16 @@ int volatile WP3=0;
 int volatile WP4=0; 
 
 int volatile timerCounter = 0;
+
+
+// tone ring / encoder tooth count
+const float PULSES_PER_REV = 49.0; 
+
+// tire diameter (meters)
+const float TIRE_DIAMETER_M = 0.533; // CHANGE FOR ACCURACY 
+
+// π * D
+const float TIRE_CIRCUMFERENCE = TIRE_DIAMETER_M * 3.14159
 
 // interrupt service routines: count interrupts
 
@@ -65,39 +78,12 @@ void interruptReset4(){
 void IRAM_ATTR onTimer(){ timerCounter ++;}
 
 void wheelSpeedDisplay(int volatile WP1, int volatile WP2, int volatile WP3, int volatile WP4){
-  
-  // average wheel pulse counts
 
-  //int wheelPulses = 0.25*(WP1 + WP2 + WP3 + WP4);
   printf("Wheel 1: %d\n", WP1);
   printf("Wheel 2: %d\n", WP2);
   printf("Wheel 3: %d\n", WP3);
   printf("Wheel 4: %d\n", WP4);
-  int wheelPulses = WP1;
 
-  // calculate angular velocity from wheel pulse count
-
-  int omega = (wheelPulses / 49.0)*2*3.14; // wheel pulses divided by 49.0 indents per tire, in radians
-
-  // convert to linear velocity
-
-  int velocity = 0.25 * omega * 3.6; // for r = 10", 3.6 is proportionality const from m/s to km/h
-
-  // calculate average RPM from wheel pulse count
-  //int RPM = (wheelPulses/49.0)*60; // subject to change based on tire 
-
-  
-  // print results
-  Serial.print("Speed = ");
-  Serial.println(velocity, 0); // print with no decimal places
-
-  //Serial.print("Wheel ");
-  //Serial.print(wheelNumber);
-  //Serial.print(" RPM = ");
-  //Serial.println(RPM);
-
-  // print wheel pulse count for testing purposes
-  //Serial.print(wheelPulses);
 }
 
 
@@ -123,15 +109,52 @@ void WheelSpeedSetup(){
   timerAlarmEnable(timer); // enable timer interrupt
 }
 
+// frequency-to-speed conversion using pulses per wheel revolution (PPR), km/h 
+// hall effect wheel speed forumla 
+float convertPulsesToSpeed(int pulseCount, float samplePeriodSec){
+    float frequencyHz = pulseCount / samplePeriodSec;
+    float speedKmh = (frequencyHz / PULSES_PER_REV) * TIRE_CIRCUMFERENCE * 3.6;
+    return speedKmh;
+}
+
+float calculateWheelSpeed(speedFL, speedFR, speedRL, speedRR){
+  float speeds[4] = {speedFL, speedFR, speedRL, speedRR}
+
+  // bubble sort for median
+  for (int i = 0; i < 3; i++)
+    for (int j = 0; j < 3 - i; j++)
+        if (speeds[j] > speeds[j + 1])
+            std::swap(speeds[j], speeds[j + 1]);
+
+  float finalWheelSpeed = (speeds[1] + speeds[2]) / 2.0f; (speeds[1] + speeds[2]) / 2.0f;
+  return finalWheelSpeed
+}
+
+// getter function for main 
+float getFinalWheelSpeed(){
+    return finalWheelSpeed;
+}
+
 void WheelSpeedReset(){
   if (timerCounter > 0){
     timerCounter --;
 
-    wheelSpeedDisplay(WP1, WP2, WP3, WP4); // prints velocity based on average wheel pulse counts
+    // prints raw values
+    wheelSpeedDisplay(WP1, WP2, WP3, WP4); 
 
+    // 1 sec sample window
+    float speedFL = convertPulsesToSpeed(WP1, 1.0);   
+    float speedFR = convertPulsesToSpeed(WP2, 1.0);
+    float speedRL = convertPulsesToSpeed(WP3, 1.0);
+    float speedRR = convertPulsesToSpeed(WP4, 1.0);
+
+    Serial.printf("FL: %.2f km/h  FR: %.2f km/h  RL: %.2f km/h  RR: %.2f km/h\n", speedFL, speedFR, speedRL, speedRR);
+
+    finalWheelSpeed = (speedFL, speedFR, speedRL, speedRR)
+    Serial.printf("Final wheelspeed value: %.2f km/h", finalWheelSpeed)
 
     // detach/reattach interrupts
-    
+
     interruptReset1();
     interruptReset2();
     interruptReset3();

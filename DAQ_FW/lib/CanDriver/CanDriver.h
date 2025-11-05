@@ -6,7 +6,7 @@
 
 namespace CanDriver
 {
-    void CanInnit();
+    void CanInit();
 
     void sendCanData(const char *canData, const uint32_t canLen, const uint16_t canID, const int canDATAint, bool isStringmsg);
 
