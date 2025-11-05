@@ -1,10 +1,9 @@
 #include "Logger.h"
 #include "IADCSensor.h"
-#include "CanDriver.h"
 #include "wheelSpeed.h"
-#include <Arduino.h>
-#include <driver/twai.h>
+#include "CAN.h"
 #include "stdlib.h"
+#include <Arduino.h>
 
 #define MAX_TEMP 4 
 #define MIN_TEMP 2
@@ -18,21 +17,14 @@
 #define CAN_TX GPIO_NUM_4 
 #define CAN_RX GPIO_NUM_5 
 
-bool faultDetected = false;
-
-// object declarations can't be done in setup()
-
-// params: sensorname, sensorID, adcAddress
-// ChildExample SensorTest("TestSensor", 1, ADCAddress::U1);
 
 // cooloant pressure sensor object decleration, MAKE SURE TO USE DIFF CHANNELS OF U1, we only have one chip physically
 CoolantPressureSensor CoolantPressure("CoolantPressureSensor", 0, ADCAddress::U1);
+CoolantPressureSensor CoolantPressure2("CoolantPressure2", 1, ADCAddress::U1); 
 
 // coolant tempature sensor object decleration
-CoolantTemperatureSensor CoolantTemperature("CoolantTemperatureSensor", 1, ADCAddress::U1);
-
-CoolantTemperatureSensor CoolantTemp2("CoolantTemp2", 2, ADCAddress::U1);
-CoolantPressureSensor CoolantPressure2("CoolantPressure2", 3, ADCAddress::U1); 
+CoolantTemperatureSensor CoolantTemperature("CoolantTemperatureSensor", 2, ADCAddress::U1);
+CoolantTemperatureSensor CoolanTemperature2("CoolantTemp2", 3, ADCAddress::U1);
 
 
 
@@ -44,7 +36,7 @@ void sendWheelSpeed(float wheelSpeed)
     int16_t scaledSpeed = static_cast<int16_t>(wheelSpeed * 100);
 
     // Sending scaled by 100 value *DASH NEEDS TO REVERSE SCALE BY 100*
-    CanDriver::sendCanData(nullptr, 2, WHEEL_MSG_ID, scaledSpeed, false);
+    CAN_SendInt16(WHEEL_MSG_ID, scaledSpeed);
 
     Logger::Notice("Wheel speed sent over CAN, float to int16, (scaled=%d)", scaledSpeed);
 }
@@ -56,7 +48,7 @@ void setup()
   Logger::Start();
   Logger::Notice("Setup");
 
-  CanDriver::CanInit();
+  CAN_Init();
 
   CoolantTemperature.Initialize();
   CoolantTemperature2.Initialize();
@@ -74,9 +66,9 @@ void loop()
 {
     Logger::Notice("Stating Main Loop");
 
-    float temp = CoolantTemperature.GetData();
+    float temp1 = CoolantTemperature.GetData();
     float temp2 = CoolantTemperature2.GetData();
-    float pressure = CoolantPressure.GetData();
+    float pressure1 = CoolantPressure.GetData();
     float pressure2 = CoolantPressure2.GetData();
 
     Logger::Trace("Coolant Temp1: %.2f C", temp1);
@@ -87,7 +79,7 @@ void loop()
     if (pressure1 < MIN_PRESSURE || pressure1 > MAX_PRESSURE || temp1 < MIN_TEMP || temp1 > MAX_TEMP ||
         pressure2 < MIN_PRESSURE || pressure2 > MAX_PRESSURE || temp2 < MIN_TEMP || temp2 > MAX_TEMP){
         Logger::Error("FAULT DETECTED: Out of range coolant values");
-        CanDriver::sendCanData(nullptr, 1, FAULT_MSG_ID, 1, false);
+        CAN_SendInt16(FAULT_MSG_ID, 1);
     }
 
     // reads interrupts, median filters, stores final value

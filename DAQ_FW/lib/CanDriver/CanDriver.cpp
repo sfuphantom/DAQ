@@ -5,7 +5,7 @@
 #include "stdio.h"
 
 // some of this can be moved to sys_config
-void CanDriver::CanInnit()
+void CanDriver::CanInit()
 {
     can_general_config_t general_config = {
         .mode = CAN_MODE_NO_ACK,         // not tested - change to CAN_MODE_NO_ACK if doesn't run
@@ -70,6 +70,8 @@ void CanDriver::sendCanData(const char *canData, const uint32_t canLen, const ui
 
     if (canLen == 0) {
         Logger::Error("Error: data_length is zero, invalid data length.");
+        return;
+
     }
 
     Logger::Notice("can_data (first 8 bytes): 0x%llX", canData);
