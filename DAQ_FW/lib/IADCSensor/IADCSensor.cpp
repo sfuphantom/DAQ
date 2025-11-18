@@ -133,6 +133,6 @@ float CoolantTemperatureSensor::convertToTemperature(float inputData)
     // converting resistance to temperature using Steinhart-Hart equation
     float temperature = 1 / (B * log(resistance / R25)) - 273.15;
  
-    return temperature;
+    return temperature; 
 }
 

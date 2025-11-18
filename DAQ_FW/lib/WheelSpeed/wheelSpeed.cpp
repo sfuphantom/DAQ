@@ -33,7 +33,7 @@ const float PULSES_PER_REV = 49.0;
 const float TIRE_DIAMETER_M = 0.533; // CHANGE FOR ACCURACY 
 
 // π * D
-const float TIRE_CIRCUMFERENCE = TIRE_DIAMETER_M * 3.14159
+const float TIRE_CIRCUMFERENCE = TIRE_DIAMETER_M * 3.14159;
 
 // interrupt service routines: count interrupts
 
@@ -117,17 +117,22 @@ float convertPulsesToSpeed(int pulseCount, float samplePeriodSec){
     return speedKmh;
 }
 
-float calculateWheelSpeed(speedFL, speedFR, speedRL, speedRR){
-  float speeds[4] = {speedFL, speedFR, speedRL, speedRR}
+float calculateWheelSpeed(float speedFL,float speedFR, float speedRL, float speedRR){
+  float speeds[4] = {speedFL, speedFR, speedRL, speedRR};
 
   // bubble sort for median
-  for (int i = 0; i < 3; i++)
-    for (int j = 0; j < 3 - i; j++)
-        if (speeds[j] > speeds[j + 1])
-            std::swap(speeds[j], speeds[j + 1]);
+  for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3 - i; j++) {
+            if (speeds[j] > speeds[j + 1]) {
+                float tmp = speeds[j];
+                speeds[j] = speeds[j + 1];
+                speeds[j + 1]  = tmp;
+            }
+        }
+    }
 
   float finalWheelSpeed = (speeds[1] + speeds[2]) / 2.0f; (speeds[1] + speeds[2]) / 2.0f;
-  return finalWheelSpeed
+  return finalWheelSpeed;
 }
 
 // getter function for main 
@@ -150,8 +155,10 @@ void WheelSpeedReset(){
 
     Serial.printf("FL: %.2f km/h  FR: %.2f km/h  RL: %.2f km/h  RR: %.2f km/h\n", speedFL, speedFR, speedRL, speedRR);
 
-    finalWheelSpeed = (speedFL, speedFR, speedRL, speedRR)
-    Serial.printf("Final wheelspeed value: %.2f km/h", finalWheelSpeed)
+    finalWheelSpeed = (speedFL, speedFR, speedRL, speedRR);
+    Serial.printf("FL: %.2f km/h  FR: %.2f km/h  RL: %.2f km/h  RR: %.2f km/h\n", speedFL, speedFR, speedRL, speedRR);
+    finalWheelSpeed = calculateWheelSpeed(speedFL, speedFR, speedRL, speedRR);
+    Serial.printf("Final wheelspeed value: %.2f km/h\n", finalWheelSpeed);
 
     // detach/reattach interrupts
 

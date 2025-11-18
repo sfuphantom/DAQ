@@ -1,12 +1,17 @@
 #include "Logger.h"
 #include "IADCSensor.h"
 #include "wheelSpeed.h"
-#include "CAN.h"
+#include "can.h"
 #include "stdlib.h"
 #include <Arduino.h>
+#define SENSOR_TEST_MODE 1 
 
-#define MAX_TEMP 4 
-#define MIN_TEMP 2
+// Cooling temp for the outer by cooling is 80 celcius max
+// Inlet, coming out of the radiator, is 75 celccius max 
+
+#define MAX_TEMP_1 80
+#define MAX_TEMP_2 75 
+#define MIN_TEMP 0
 #define MIN_PRESSURE 1.3 
 #define MAX_PRESSURE 1.7 
 
@@ -17,15 +22,13 @@
 #define CAN_TX GPIO_NUM_4 
 #define CAN_RX GPIO_NUM_5 
 
-
 // cooloant pressure sensor object decleration, MAKE SURE TO USE DIFF CHANNELS OF U1, we only have one chip physically
-CoolantPressureSensor CoolantPressure("CoolantPressureSensor", 0, ADCAddress::U1);
-CoolantPressureSensor CoolantPressure2("CoolantPressure2", 1, ADCAddress::U1); 
+CoolantPressureSensor CoolantPressure1("CoolantPressureSensor", 2, ADCAddress::U2);
+// CoolantPressureSensor CoolantPressure2("CoolantPressure2", 3, ADCAddress::U2); 
 
 // coolant tempature sensor object decleration
-CoolantTemperatureSensor CoolantTemperature("CoolantTemperatureSensor", 2, ADCAddress::U1);
-CoolantTemperatureSensor CoolanTemperature2("CoolantTemp2", 3, ADCAddress::U1);
-
+CoolantTemperatureSensor CoolantTemperature1("CoolantTemperatureSensor", 0, ADCAddress::U2);
+CoolantTemperatureSensor CoolantTemperature2("CoolantTemperatureSensor2", 1, ADCAddress::U2);
 
 
 void sendWheelSpeed(float wheelSpeed) 
@@ -43,41 +46,58 @@ void sendWheelSpeed(float wheelSpeed)
 
 void setup()
 {
-  Wire.begin(21, 22); // SDA = GPIO21, SCL = GPIO22 for ESP32
+    Serial.begin(BAUD_RATE);
+    delay(1000);
+    Wire.begin(21, 22); // SDA = GPIO21, SCL = GPIO22 for ESP32
 
-  Logger::Start();
-  Logger::Notice("Setup");
+    Logger::Start();
+    Logger::Notice("Setup");
 
-  CAN_Init();
+    CAN_Init();
 
-  CoolantTemperature.Initialize();
-  CoolantTemperature2.Initialize();
-  CoolantPressure.Initialize();
-  CoolantPressure2.Initialize();
+    CoolantTemperature1.Initialize();
+    CoolantTemperature2.Initialize();
+    CoolantPressure1.Initialize();
+    //   CoolantPressure2.Initialize();
 
-  // Send initialization message
-  CanDriver::sendCanData(nullptr, 1, FAULT_MSG_ID, 0, false);
-
-  Logger::Notice("Setup complete");
+    // Send initialization message
+    #if !SENSOR_TEST_MODE
+        CanDriver::sendCanData(nullptr, 1, FAULT_MSG_ID, 0, false);
+    #endif
+    Logger::Notice("Setup complete");
 }
 
 // Main
 void loop()
 {
-    Logger::Notice("Stating Main Loop");
+    Logger::Notice("Starting Main Loop");
 
-    float temp1 = CoolantTemperature.GetData();
+    float temp1 = CoolantTemperature1.GetData();
     float temp2 = CoolantTemperature2.GetData();
-    float pressure1 = CoolantPressure.GetData();
-    float pressure2 = CoolantPressure2.GetData();
+    float pressure1 = CoolantPressure1.GetData();
+    // float pressure2 = CoolantPressure2.GetData();
 
     Logger::Trace("Coolant Temp1: %.2f C", temp1);
     Logger::Trace("Coolant Temp2: %.2f C", temp2);
     Logger::Trace("Coolant Pressure1: %.2f bar", pressure1);
-    Logger::Trace("Coolant Pressure2: %.2f bar", pressure2);
+    // Logger::Trace("Coolant Pressure2: %.2f bar", pressure2);
 
-    if (pressure1 < MIN_PRESSURE || pressure1 > MAX_PRESSURE || temp1 < MIN_TEMP || temp1 > MAX_TEMP ||
-        pressure2 < MIN_PRESSURE || pressure2 > MAX_PRESSURE || temp2 < MIN_TEMP || temp2 > MAX_TEMP){
+    Serial.print("Temp1: ");
+    Serial.print(temp1);
+    Serial.print(" C, Temp2: ");
+    Serial.print(temp2);
+    Serial.print(" C, Pressure1: ");
+    Serial.print(pressure1);
+    Serial.println(" bar");
+
+    #if SENSOR_TEST_MODE
+        delay(1000);
+        return;
+    #endif
+
+    // pressure2 < MIN_PRESSURE || pressure2 > MAX_PRESSURE ||
+
+    if (pressure1 < MIN_PRESSURE || pressure1 > MAX_PRESSURE || temp1 < MIN_TEMP || temp1 > MAX_TEMP_1 || temp2 < MIN_TEMP || temp2 > MAX_TEMP_2){
         Logger::Error("FAULT DETECTED: Out of range coolant values");
         CAN_SendInt16(FAULT_MSG_ID, 1);
     }
