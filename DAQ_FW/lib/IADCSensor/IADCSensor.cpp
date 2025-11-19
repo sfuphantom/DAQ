@@ -1,4 +1,5 @@
 #include "IADCSensor.h"
+#include <math.h>
 
 // ADC INFO
 // adc voltage 2V~5.5V, 860 sample rate, SERIAL output, 16 bit resolution, 15 µV min voltage increment
@@ -26,27 +27,32 @@ void IADCSensor::Initialize()
 {
     if (!mADS.begin(static_cast<uint8_t>(mADC_Address)))
     {
-        while (1)
-        {
-            Logger::Error("Failed to start ads with ID: %s", PrintAddress());
-        }
+        mInitialized = false;
+        Logger::Error("Failed to start ads with ID: %s", PrintAddress());
+        return;
     }
-    else
-        Logger::Notice("ADC %s initialized", PrintAddress());
+
+    mInitialized = true;
+    Logger::Notice("ADC %s initialized", PrintAddress());
 }
 
 float IADCSensor::GetData()
 {
+    if (!mInitialized)
+    {
+        return NAN;
+    }
+
     // gets bit data from the adc
     int16_t raw_data = Read();
 
-    Logger::Trace("Initial Data: %u from sensor <%s> with ID: %u and ads component %s",
+    Logger::Trace("Initial Data: %u from sensor %s with ID: %u and ads component %s",
                   raw_data, mSensorName, mSensorID, PrintAddress());
 
     // adc bit to voltage conversion, gain mode can be set via the adc library
     float final_data = Process(mADS.computeVolts(raw_data)); // Process is overidden by the child class
-
-    Logger::Notice("Processed Data: %D, from sensor <%s> with ID: %u and adc component %s",
+    
+    Logger::Notice("Processed Data: %D, from sensor %s with ID: %u and adc component %s",
                    final_data, mSensorName, mSensorID, PrintAddress());
 
     return (float)final_data;
@@ -54,13 +60,17 @@ float IADCSensor::GetData()
 
 int16_t IADCSensor::Read()
 {
+    if (!mInitialized)
+    {
+        return 0;
+    }
 
     // testing read function - NOT FINAL
     int16_t adcBitData = mADS.readADC_SingleEnded(mSensorID);
 
     if (!adcBitData)
-    {
-        Logger::Warning("No Input Detected from sensor <%s> with ID: %u and adc component %s",
+    {   
+        Logger::Warning("No Input Detected from sensor %s with ID: %u and adc component %s",
                         mSensorName, mSensorID, PrintAddress());
         return 0;
     }
@@ -69,7 +79,7 @@ int16_t IADCSensor::Read()
 }
 
 float ChildExample::Process(float InputData)
-{
+{   
     Logger::Error("Using example class");
     return InputData;
 }
@@ -89,6 +99,11 @@ const char *IADCSensor::PrintAddress()
     default:
         return "<Error, invalid Address>";
     }
+}
+
+bool IADCSensor::IsOnline() const
+{
+    return mInitialized;
 }
 
 float CoolantPressureSensor::Process(float inputData)
@@ -133,6 +148,5 @@ float CoolantTemperatureSensor::convertToTemperature(float inputData)
     // converting resistance to temperature using Steinhart-Hart equation
     float temperature = 1 / (B * log(resistance / R25)) - 273.15;
  
-    return temperature;
+    return temperature; 
 }
-

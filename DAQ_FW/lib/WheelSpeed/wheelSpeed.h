@@ -7,5 +7,7 @@
 void wheelSpeedDisplay(int volatile WP1, int volatile WP2, int volatile WP3, int volatile WP4);
 void WheelSpeedReset();
 void WheelSpeedSetup();
+float convertPulsesToSpeed();
+float getFinalWheelSpeed();
 
 #endif

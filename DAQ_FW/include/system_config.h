@@ -28,8 +28,8 @@ enum class ADCAddress
 // param goes to ArduinoLog.cpp line 192: _logOutput->print(va_arg(*args, double), LOG_DECIMAL_PLACES);
 #define LOG_DECIMAL_PLACES 5
 
-// Baud Rate variable
-uint32_t constexpr BAUD_RATE = 9600;
+// Serial baud rate used everywhere in the firmware/monitor
+uint32_t constexpr BAUD_RATE = 115200;
 
 // contstant time calculation variables
 uint32_t constexpr MSECS_PER_SEC = 1000;
