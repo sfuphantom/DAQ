@@ -4,7 +4,7 @@
 void CAN_Init()
 {
     twai_general_config_t general_config = {
-        .mode = TWAI_MODE_NO_ACK, //TWAI_MODE_LOOPBACK,
+        .mode = TWAI_MODE_NO_ACK,
         .tx_io = GPIO_NUM_5,
         .rx_io = GPIO_NUM_4,
         .clkout_io = TWAI_IO_UNUSED,
@@ -32,6 +32,7 @@ void CAN_Init()
     twai_message_t msg = {};
     msg.identifier = 0x321;
     msg.data_length_code = 2;
+    msg.self = 1; // request self reception so we can validate without another node
     msg.data[0] = 0xAB;
     msg.data[1] = 0xCD;
 

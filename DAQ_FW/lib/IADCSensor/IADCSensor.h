@@ -27,6 +27,8 @@ public:
     // for logging the address of the current ADC
     const char *PrintAddress();
 
+    bool IsOnline() const;
+
 private:
     Adafruit_ADS1115 mADS;
 
@@ -36,6 +38,7 @@ private:
     const char *mSensorName;
     const uint32_t mSensorID;
     const ADCAddress mADC_Address;
+    bool mInitialized = false;
 };
 
 // example implementation of the senor child class
