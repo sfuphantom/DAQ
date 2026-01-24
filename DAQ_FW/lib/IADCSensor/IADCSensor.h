@@ -76,4 +76,15 @@ class CoolantTemperatureSensor : public IADCSensor
         float convertToTemperature(float inputData);
 };
 
+// class SuspensionSensor : public IADCSensor
+// {
+//     public:
+//         SuspensionSensor(const char *_SensorName, const uint16_t _SensorID, const ADCAddress _ADCAddress)
+//             : IADCSensor(_SensorName, _SensorID, _ADCAddress) {}
+        
+
+//     private:
+//         //
+// };
+
 #endif

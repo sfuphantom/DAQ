@@ -4,9 +4,9 @@
 void CAN_Init()
 {
     twai_general_config_t general_config = {
-        .mode = TWAI_MODE_NO_ACK,
-        .tx_io = GPIO_NUM_5,
-        .rx_io = GPIO_NUM_4,
+        .mode = TWAI_MODE_NORMAL,
+        .tx_io = GPIO_NUM_4,
+        .rx_io = GPIO_NUM_5,
         .clkout_io = TWAI_IO_UNUSED,
         .bus_off_io = TWAI_IO_UNUSED,
         .tx_queue_len = 10,
@@ -15,7 +15,7 @@ void CAN_Init()
         .clkout_divider = 0
     };
 
-    twai_timing_config_t timing_config = TWAI_TIMING_CONFIG_250KBITS();
+    twai_timing_config_t timing_config = TWAI_TIMING_CONFIG_500KBITS();
     twai_filter_config_t filter_config = TWAI_FILTER_CONFIG_ACCEPT_ALL();
 
     if (twai_driver_install(&general_config, &timing_config, &filter_config) != ESP_OK ||

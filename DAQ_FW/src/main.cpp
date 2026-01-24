@@ -6,7 +6,9 @@
 #include <Arduino.h>
 #include <math.h>
 #include <stdio.h>
-#define SENSOR_TEST_MODE 1
+// 1 is on and 0 is off
+#define SENSOR_TEST_MODE 0
+#define CAN_TEST_MODE 1   
 
 // Toggle individual sensors 
 #define ENABLE_TEMP_SENSOR_1 1
@@ -103,6 +105,22 @@ void sendWheelSpeed(float wheelSpeed)
     Serial.println();
 }
 
+void sendKnownWheelSpeedTestPattern()
+{
+    // Send a repeating pattern of known speeds (m/s)
+    static const float speeds[] = {0.00f, 1.23f, 5.00f, 10.00f, 27.78f}; // 27.78 m/s ≈ 100 km/h
+    static int idx = 0;
+    static unsigned long lastSend = 0;
+
+    unsigned long now = millis();
+    if (now - lastSend >= 500) { // 2 Hz updates so it can be watchable
+        float s = speeds[idx];
+        sendWheelSpeed(s);       // uses existing scaling + CAN_SendInt16
+        idx = (idx + 1) % (sizeof(speeds) / sizeof(speeds[0]));
+        lastSend = now;
+    }
+}
+
 void setup()
 {
     Serial.begin(BAUD_RATE);
@@ -129,7 +147,7 @@ void setup()
 
     // Send initialization message
     #if !SENSOR_TEST_MODE
-        CanDriver::sendCanData(nullptr, 1, FAULT_MSG_ID, 0, false);
+        CAN_SendInt16(FAULT_MSG_ID, 0);
     #endif
     Logger::Notice("Setup complete");
     Logger::Notice("Starting main loop...");
@@ -164,6 +182,20 @@ void loop()
 
     static unsigned long lastLogTime = 0;
     unsigned long now = millis();
+
+    #if CAN_TEST_MODE
+        static unsigned long lastFaultSend = 0;
+        sendKnownWheelSpeedTestPattern();
+
+        // continuous FAULT=1 
+        if (now - lastFaultSend >= 100) {
+            CAN_SendInt16(FAULT_MSG_ID, 1);
+            lastFaultSend = now;
+        }
+        delay(10);
+        return;
+    #endif
+
     if (now - lastLogTime >= 1000) {
         logSensorSnapshot(temp1, temp2, pressure1, pressure2);
         lastLogTime = now;

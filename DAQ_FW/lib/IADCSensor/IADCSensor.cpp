@@ -150,3 +150,8 @@ float CoolantTemperatureSensor::convertToTemperature(float inputData)
  
     return temperature; 
 }
+
+// float SuspensionSensor::Process(float inputData)
+// {
+
+// }
