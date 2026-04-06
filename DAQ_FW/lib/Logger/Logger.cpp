@@ -53,13 +53,13 @@ static void PrintTimestamp(Print *_logOutput) // unedited ArduinoLog timesamp
 {
     // Total time
     const uint32_t msecs = millis();
-    const uint32_t secs = msecs / MSECS_PER_SEC;
+    const uint32_t secs = msecs / 1000U;
 
     // Time in components
-    const uint32_t MilliSeconds = msecs % MSECS_PER_SEC;
-    const uint32_t Seconds = secs % SECS_PER_MIN;
-    const uint32_t Minutes = (secs / SECS_PER_MIN) % SECS_PER_MIN;
-    const uint32_t Hours = (secs % SECS_PER_DAY) / SECS_PER_HOUR;
+    const uint32_t MilliSeconds = msecs % 1000U;
+    const uint32_t Seconds = secs % 60U;
+    const uint32_t Minutes = (secs / 60U) % 60U;
+    const uint32_t Hours = (secs % 86400U) / 3600U;
 
     // Time as string
     char timestamp[20];

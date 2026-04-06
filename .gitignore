@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+*.pyc
+
+# pip freeze > requirements.txt
+# Local paths / secrets
+daq_local_config.py

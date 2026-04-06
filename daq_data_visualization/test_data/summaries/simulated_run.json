@@ -1,0 +1,46 @@
+{
+  "duration_s": 59.9,
+  "dt_ms": 100,
+  "vehicle_speed_max": 61.54524090690727,
+  "vehicle_speed_avg": 30.01753087039056,
+  "wheel_speed_max_deviation": 3.6941196005581105,
+  "temp1_max": 43.13256883037815,
+  "temp2_max": 37.03158620546088,
+  "delta_t_max": 7.6838532650990246,
+  "pressure_min": 1.4500004896724648,
+  "pressure_max": 1.549999687142851,
+  "missing": {
+    "speed_fl_kmh": {
+      "missing_pct": 0.0,
+      "longest_gap_ms": 0
+    },
+    "speed_fr_kmh": {
+      "missing_pct": 0.0,
+      "longest_gap_ms": 0
+    },
+    "speed_rl_kmh": {
+      "missing_pct": 0.0,
+      "longest_gap_ms": 0
+    },
+    "speed_rr_kmh": {
+      "missing_pct": 0.0,
+      "longest_gap_ms": 0
+    },
+    "temp1_c": {
+      "missing_pct": 0.0,
+      "longest_gap_ms": 0
+    },
+    "temp2_c": {
+      "missing_pct": 0.0,
+      "longest_gap_ms": 0
+    },
+    "pressure1_bar": {
+      "missing_pct": 0.0,
+      "longest_gap_ms": 0
+    },
+    "pressure2_bar": {
+      "missing_pct": 0.0,
+      "longest_gap_ms": 0
+    }
+  }
+}

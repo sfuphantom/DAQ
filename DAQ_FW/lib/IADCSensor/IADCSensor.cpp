@@ -19,21 +19,20 @@
 // CLASS METHODS:
 
 // Default constructor with generic metadata
-IADCSensor::IADCSensor(const char *_SensorName, const uint16_t _SensorID, const ADCAddress _ADCAddress)
-    : mSensorName(_SensorName), mSensorID(_SensorID), mADC_Address(_ADCAddress) {}
+IADCSensor::IADCSensor(const char *_SensorName, const uint16_t _SensorID, const ADCAddress _ADCAddress, Adafruit_ADS1115 *adsDevice)
+    : mADS(adsDevice), mSensorName(_SensorName), mSensorID(_SensorID), mADC_Address(_ADCAddress) {}
 
-// ADS1115 initialize func, to be called on setup()
-void IADCSensor::Initialize()
+void IADCSensor::Initialize(bool chipOnline)
 {
-    if (!mADS.begin(static_cast<uint8_t>(mADC_Address)))
+    if (mADS == nullptr || !chipOnline)
     {
         mInitialized = false;
-        Logger::Error("Failed to start ads with ID: %s", PrintAddress());
+        Logger::Error("ADC %s unavailable for sensor %s", PrintAddress(), mSensorName);
         return;
     }
 
     mInitialized = true;
-    Logger::Notice("ADC %s initialized", PrintAddress());
+    Logger::Notice("Sensor %s attached to ADC %s channel %u", mSensorName, PrintAddress(), mSensorID);
 }
 
 float IADCSensor::GetData()
@@ -46,13 +45,13 @@ float IADCSensor::GetData()
     // gets bit data from the adc
     int16_t raw_data = Read();
 
-    Logger::Trace("Initial Data: %u from sensor %s with ID: %u and ads component %s",
+    Logger::Trace("Initial Data: %d from sensor %s with ID: %u and ads component %s",
                   raw_data, mSensorName, mSensorID, PrintAddress());
 
     // adc bit to voltage conversion, gain mode can be set via the adc library
-    float final_data = Process(mADS.computeVolts(raw_data)); // Process is overidden by the child class
+    float final_data = Process(mADS->computeVolts(raw_data)); // Process is overidden by the child class
     
-    Logger::Notice("Processed Data: %D, from sensor %s with ID: %u and adc component %s",
+    Logger::Notice("Processed Data: %.4f, from sensor %s with ID: %u and adc component %s",
                    final_data, mSensorName, mSensorID, PrintAddress());
 
     return (float)final_data;
@@ -66,14 +65,7 @@ int16_t IADCSensor::Read()
     }
 
     // testing read function - NOT FINAL
-    int16_t adcBitData = mADS.readADC_SingleEnded(mSensorID);
-
-    if (!adcBitData)
-    {   
-        Logger::Warning("No Input Detected from sensor %s with ID: %u and adc component %s",
-                        mSensorName, mSensorID, PrintAddress());
-        return 0;
-    }
+    int16_t adcBitData = mADS->readADC_SingleEnded(mSensorID);
 
     return (int16_t)adcBitData;
 }
@@ -106,23 +98,6 @@ bool IADCSensor::IsOnline() const
     return mInitialized;
 }
 
-float CoolantPressureSensor::Process(float inputData)
-{
-    float pressure = convertToPressure(inputData);
-    return pressure;
-}
-
-float CoolantPressureSensor::convertToPressure(float inputData)
-{
-    float pressure = (inputData - 0.5) / 3.0;
-
-    // pressure range in bars
-    float minPressure = 0.0;
-    float maxPressure = 4.0; 
-    // using linear interpolation
-    return pressure * (maxPressure - minPressure) + minPressure;
-}
-
 float CoolantTemperatureSensor::Process(float inputData)
 {
     float temperature = convertToTemperature(inputData);
@@ -131,27 +106,55 @@ float CoolantTemperatureSensor::Process(float inputData)
 
 float CoolantTemperatureSensor::convertToTemperature(float inputData)
 {
-    const float beta = 34535; // K
+    // CTTS-302651-F01
+    // Convert voltage -> thermistor resistance using a divider, then apply Beta equation.
+    const float vRef = 5.0f;          // ADC reference / divider supply
+    const float rFixed = 10000.0f;    // fixed resistor in divider (ohms)
+    const float r25 = 10000.0f;       // thermistor resistance at 25°C (ohms)
+    const float beta = 3435.0f;      // thermistor beta value (K)
+    const float t25K = 298.15f;       // 25 celcius in Kelvin
 
-    const float R25 = 10000; // resistance of sensor at 25°C
+    if (!isfinite(inputData)) return NAN;
+    if (inputData <= 0.0f || inputData >= vRef) return NAN;
 
-    // steinhart-Hart equation coefficients
-    const float A = 0.001125308852122; // 1/B (B is beta value)
-    const float B = 0.000234711863267; // 1/C (C is reference temperature in Kelvin)
+    // Assuming divider: vRef -> rFixed -> node -> thermistor -> GND.
+    float rTherm = (rFixed * inputData) / (vRef - inputData);
 
-    // refrenece temp in Kelvin
-    const float Tref = 298.15; // 25°C in Kelvin
-
-    // resistance at input temperature using Steinhart-Hart equation
-    float resistance = R25 * exp(A * (1 / (inputData + 273.15) - 1 / Tref));
-
-    // converting resistance to temperature using Steinhart-Hart equation
-    float temperature = 1 / (B * log(resistance / R25)) - 273.15;
+    // Beta equation for NTC thermistor
+    // temp goes up, resistance goes down
+    float temperatureK = 1.0f / ((1.0f / t25K) + (1.0f / beta) * log(rTherm / r25));
+    float temperature = temperatureK - 273.15f;
  
     return temperature; 
 }
 
-// float SuspensionSensor::Process(float inputData)
-// {
+float SteeringAngleSensor::Process(float inputData)
+{
+    return convertToAngleDegrees(inputData);
+}
 
-// }
+float SteeringAngleSensor::convertToAngleDegrees(float inputData)
+{
+    if (!isfinite(inputData)) return NAN;
+    if (STEERING_ANGLE_MAX_V <= STEERING_ANGLE_MIN_V) return NAN;
+
+    float clampedVoltage = inputData;
+    if (clampedVoltage < STEERING_ANGLE_MIN_V)
+    {
+        clampedVoltage = STEERING_ANGLE_MIN_V;
+    }
+    else if (clampedVoltage > STEERING_ANGLE_MAX_V)
+    {
+        clampedVoltage = STEERING_ANGLE_MAX_V;
+    }
+
+    float normalized = (clampedVoltage - STEERING_ANGLE_MIN_V) /
+                       (STEERING_ANGLE_MAX_V - STEERING_ANGLE_MIN_V);
+    return normalized * STEERING_ANGLE_FULL_SCALE_DEG;
+}
+
+float SuspensionSensor::Process(float inputData)
+{
+    if (!isfinite(inputData)) return NAN;
+    return inputData;
+}

@@ -1,12 +1,14 @@
 #include "can.h"
 #include "Logger.h"
+#include "system_config.h"
+#include <esp_err.h>
 
 void CAN_Init()
 {
     twai_general_config_t general_config = {
         .mode = TWAI_MODE_NORMAL,
-        .tx_io = GPIO_NUM_4,
-        .rx_io = GPIO_NUM_5,
+        .tx_io = CAN_TX_PIN,
+        .rx_io = CAN_RX_PIN,
         .clkout_io = TWAI_IO_UNUSED,
         .bus_off_io = TWAI_IO_UNUSED,
         .tx_queue_len = 10,
@@ -57,5 +59,45 @@ void CAN_SendInt16(uint16_t id, int16_t value)
     msg.data[0] = value & 0xFF;
     msg.data[1] = value >> 8;
 
-    twai_transmit(&msg, pdMS_TO_TICKS(50));
+    if (id == static_cast<uint16_t>(CANMessageId::CoolingFault))
+    {
+        Logger::Notice("CoolingFault CAN TX -> %d", value);
+    }
+    else if (id == static_cast<uint16_t>(CANMessageId::WheelSpeed))
+    {
+        Logger::Notice("WheelSpeed CAN TX -> %d (centi-kmh)", value);
+    }
+    else
+    {
+        Logger::Notice("CAN TX -> ID: 0x%X, data: [%X %X]", msg.identifier, msg.data[0], msg.data[1]);
+    }
+
+    esp_err_t txResult = twai_transmit(&msg, pdMS_TO_TICKS(50));
+    if (txResult != ESP_OK)
+    {
+        Logger::Error("CAN TX failed (ID: 0x%X): %s", msg.identifier, esp_err_to_name(txResult));
+    }
+}
+
+void CAN_SendUInt8(uint16_t id, uint8_t value)
+{
+    twai_message_t msg = {};
+    msg.identifier = id;
+    msg.data_length_code = 1;
+    msg.data[0] = value;
+
+    if (id == static_cast<uint16_t>(CANMessageId::CoolingFault))
+    {
+        Logger::Notice("CoolingFault CAN TX -> %u", value);
+    }
+    else
+    {
+        Logger::Notice("CAN TX -> ID: 0x%X, data: [%X]", msg.identifier, msg.data[0]);
+    }
+
+    esp_err_t txResult = twai_transmit(&msg, pdMS_TO_TICKS(50));
+    if (txResult != ESP_OK)
+    {
+        Logger::Error("CAN TX failed (ID: 0x%X): %s", msg.identifier, esp_err_to_name(txResult));
+    }
 }
