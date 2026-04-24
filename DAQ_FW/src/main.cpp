@@ -1,5 +1,6 @@
 #include "Logger.h"
 #include "FaultService.h"
+#include "RTCService.h"
 #include "SDLoggingService.h"
 #include "SensorService.h"
 #include "TaskScheduler.h"
@@ -24,6 +25,8 @@ void setup()
     #if WATCHDOG_ENABLED
     esp_task_wdt_init(WATCHDOG_TIMEOUT_S, true);
     #endif
+    RTCService_Init();
+
     bool sdOk = false;
     #if ENABLE_SD_LOGGING_OUTPUT
     SPI.begin(SD_SCK_PIN, SD_MISO_PIN, SD_MOSI_PIN, SD_CS_PIN);
@@ -34,16 +37,22 @@ void setup()
         Logger::Notice("SD init OK");
     }
     #endif
-    SDLoggingService_Init(sdOk);
+    char runTimestamp[16] = "";
+    RTCService_GetBootTimestamp(runTimestamp, sizeof(runTimestamp));
+    SDLoggingService_Init(sdOk, runTimestamp);
 
     #if ENABLE_TELEMETRY_OUTPUT
     TELEMETRY_UART.begin(TELEMETRY_BAUD, SERIAL_8N1, TELEMETRY_RX_PIN, TELEMETRY_TX_PIN);
     #endif
     if (CAN_ENABLED)
     {
-        CAN_Init();
+        bool canOk = CAN_Init();
         Serial.println();
-        Logger::Notice("CAN initialized");
+        if (canOk) {
+            Logger::Notice("CAN initialized");
+        } else {
+            Logger::Error("CAN unavailable");
+        }
     }
 
     #if ENABLE_WHEEL_SPEED_SENSORS && !ENABLE_SENSOR_SIMULATION

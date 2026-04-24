@@ -3,8 +3,12 @@
 #include "system_config.h"
 #include <esp_err.h>
 
-void CAN_Init()
+static bool gCanReady = false;
+
+bool CAN_Init()
 {
+    gCanReady = false;
+
     twai_general_config_t general_config = {
         .mode = TWAI_MODE_NORMAL,
         .tx_io = CAN_TX_PIN,
@@ -20,13 +24,22 @@ void CAN_Init()
     twai_timing_config_t timing_config = TWAI_TIMING_CONFIG_500KBITS();
     twai_filter_config_t filter_config = TWAI_FILTER_CONFIG_ACCEPT_ALL();
 
-    if (twai_driver_install(&general_config, &timing_config, &filter_config) != ESP_OK ||
-        twai_start() != ESP_OK)
+    esp_err_t installResult = twai_driver_install(&general_config, &timing_config, &filter_config);
+    if (installResult != ESP_OK)
     {
-        Logger::Error("CAN Init Failed");
-        return;
+        Logger::Error("CAN driver install failed: %s", esp_err_to_name(installResult));
+        return false;
     }
 
+    esp_err_t startResult = twai_start();
+    if (startResult != ESP_OK)
+    {
+        Logger::Error("CAN driver start failed: %s", esp_err_to_name(startResult));
+        twai_driver_uninstall();
+        return false;
+    }
+
+    gCanReady = true;
     Logger::Notice("CAN Initialized (TWAI)");
 
     Logger::Notice("Testing CAN Loopback...");
@@ -38,7 +51,12 @@ void CAN_Init()
     msg.data[0] = 0xAB;
     msg.data[1] = 0xCD;
 
-    twai_transmit(&msg, pdMS_TO_TICKS(1000));
+    esp_err_t txResult = twai_transmit(&msg, pdMS_TO_TICKS(1000));
+    if (txResult != ESP_OK)
+    {
+        Logger::Error("CAN loopback transmit failed: %s", esp_err_to_name(txResult));
+        return true;
+    }
 
     twai_message_t rx;
     if (twai_receive(&rx, pdMS_TO_TICKS(1000)) == ESP_OK)
@@ -49,10 +67,18 @@ void CAN_Init()
     {
         Logger::Error("LOOPBACK FAILED");
     }
+
+    return true;
 }
 
 void CAN_SendInt16(uint16_t id, int16_t value)
 {
+    if (!gCanReady)
+    {
+        Logger::Error("CAN TX skipped, TWAI driver is not ready");
+        return;
+    }
+
     twai_message_t msg = {};
     msg.identifier = id;
     msg.data_length_code = 2;
@@ -81,6 +107,12 @@ void CAN_SendInt16(uint16_t id, int16_t value)
 
 void CAN_SendUInt8(uint16_t id, uint8_t value)
 {
+    if (!gCanReady)
+    {
+        Logger::Error("CAN TX skipped, TWAI driver is not ready");
+        return;
+    }
+
     twai_message_t msg = {};
     msg.identifier = id;
     msg.data_length_code = 1;

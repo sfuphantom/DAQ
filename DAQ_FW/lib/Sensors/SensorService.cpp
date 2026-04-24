@@ -9,8 +9,12 @@ namespace
 {
     Adafruit_ADS1115 ADS_U1;
     Adafruit_ADS1115 ADS_U2;
+    Adafruit_ADS1115 ADS_U3;
+    Adafruit_ADS1115 ADS_U4;
     bool adsU1Online = false;
     bool adsU2Online = false;
+    bool adsU3Online = false;
+    bool adsU4Online = false;
 }
 
 #if ENABLE_TEMP_SENSOR_1
@@ -26,13 +30,13 @@ static SteeringAngleSensor SteeringAngle("SteeringAngleSensor", 3, ADCAddress::U
 static SuspensionSensor Suspension1("SuspensionSensor1", 0, ADCAddress::U1, &ADS_U1);
 #endif
 #if ENABLE_SUSP_SENSOR_2
-static SuspensionSensor Suspension2("SuspensionSensor2", 1, ADCAddress::U1, &ADS_U1);
+static SuspensionSensor Suspension2("SuspensionSensor2", 1, ADCAddress::U1, &ADS_U4);
 #endif
 #if ENABLE_SUSP_SENSOR_3
-static SuspensionSensor Suspension3("SuspensionSensor3", 2, ADCAddress::U1, &ADS_U1);
+static SuspensionSensor Suspension3("SuspensionSensor3", 2, ADCAddress::U1, &ADS_U3);
 #endif
 #if ENABLE_SUSP_SENSOR_4
-static SuspensionSensor Suspension4("SuspensionSensor4", 3, ADCAddress::U1, &ADS_U1);
+static SuspensionSensor Suspension4("SuspensionSensor4", 3, ADCAddress::U1, &ADS_U2);
 #endif
 
 void SensorService_Init()
@@ -40,6 +44,8 @@ void SensorService_Init()
     FlowPulse_Init();
     adsU1Online = ADS_U1.begin(static_cast<uint8_t>(ADCAddress::U1));
     adsU2Online = ADS_U2.begin(static_cast<uint8_t>(ADCAddress::U2));
+    adsU3Online = ADS_U3.begin(static_cast<uint8_t>(ADCAddress::U3));
+    adsU4Online = ADS_U4.begin(static_cast<uint8_t>(ADCAddress::U4));
 
     if (!adsU1Online)
     {
@@ -48,6 +54,14 @@ void SensorService_Init()
     if (!adsU2Online)
     {
         Logger::Error("Failed to start ADC U2");
+    }
+    if (!adsU3Online)
+    {
+        Logger::Error("Failed to start ADC U3");
+    }
+    if (!adsU4Online)
+    {
+        Logger::Error("Failed to start ADC U4");
     }
 #if ENABLE_TEMP_SENSOR_1
     CoolantTemperature1.Initialize(adsU2Online);

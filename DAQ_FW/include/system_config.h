@@ -11,7 +11,7 @@ static HardwareSerial &TELEMETRY_UART = Serial2;
 
 // I2C pins for ADC
 gpio_num_t constexpr I2C_SDA_PIN = GPIO_NUM_21;
-gpio_num_t constexpr I2C_SCL_PIN = GPIO_NUM_22;
+gpio_num_t constexpr I2C_SCL_PIN = GPIO_NUM_23;
 
 // CAN pins
 gpio_num_t constexpr CAN_TX_PIN = GPIO_NUM_4;
@@ -23,9 +23,9 @@ gpio_num_t constexpr TELEMETRY_RX_PIN = GPIO_NUM_16;
 uint32_t constexpr TELEMETRY_BAUD = 57600;
 
 // SD Card (SPI) pins
-gpio_num_t constexpr SD_CS_PIN = GPIO_NUM_15;
-gpio_num_t constexpr SD_MISO_PIN = GPIO_NUM_13;
-gpio_num_t constexpr SD_MOSI_PIN = GPIO_NUM_12;
+gpio_num_t constexpr SD_CS_PIN = GPIO_NUM_33;
+gpio_num_t constexpr SD_MISO_PIN = GPIO_NUM_27;
+gpio_num_t constexpr SD_MOSI_PIN = GPIO_NUM_13;
 gpio_num_t constexpr SD_SCK_PIN = GPIO_NUM_14;
 
 // System modes, 0 means both are enabled, 1 means only sensors are disabled, and 2 means only can is disabled
@@ -33,7 +33,7 @@ gpio_num_t constexpr SD_SCK_PIN = GPIO_NUM_14;
 #define MODE_CAN_ONLY 1
 #define MODE_SENSORS_ONLY 2
 // Adjust what setting you would like to use here:
-#define SYSTEM_MODE MODE_SENSORS_ONLY
+#define SYSTEM_MODE MODE_FULL
 
 #define CAN_ENABLED (SYSTEM_MODE != MODE_SENSORS_ONLY)
 #define SENSORS_ENABLED (SYSTEM_MODE != MODE_CAN_ONLY)
@@ -44,6 +44,9 @@ gpio_num_t constexpr SD_SCK_PIN = GPIO_NUM_14;
 
 // Telemetry (antenna) CSV rate
 #define TELEMETRY_PERIOD_MS 100
+#define SD_LOG_PERIOD_MS 100
+#define SERIAL_LOG_PERIOD_MS 1000
+#define SENSOR_NULL_TEXT "null"
 uint32_t constexpr SENSOR_SIMULATION_PERIOD_MS = 50;
 
 // Toggle wheel speed subsystem
@@ -67,7 +70,7 @@ uint32_t constexpr SENSOR_SIMULATION_PERIOD_MS = 50;
 #define ENABLE_SUSP_SENSOR_4 0
 
 // suspension sensors (ESP32 ADC2) pins
-gpio_num_t constexpr SUSP_1 = GPIO_NUM_27;
+//gpio_num_t constexpr SUSP_1 = GPIO_NUM_27;
 gpio_num_t constexpr SUSP_2 = GPIO_NUM_25;
 gpio_num_t constexpr SUSP_3 = GPIO_NUM_26;
 gpio_num_t constexpr SUSP_4 = GPIO_NUM_2;

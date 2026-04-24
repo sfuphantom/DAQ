@@ -129,7 +129,7 @@ static void ChassisSensorsTask(void *parameter)
 static void LoggerTask(void *parameter)
 {
     (void)parameter;
-    const TickType_t delayTicks = pdMS_TO_TICKS(1000);
+    const TickType_t delayTicks = pdMS_TO_TICKS(20);
     #if WATCHDOG_ENABLED
     esp_task_wdt_add(nullptr);
     #endif
@@ -139,15 +139,23 @@ static void LoggerTask(void *parameter)
         #if WATCHDOG_ENABLED
         esp_task_wdt_reset();
         #endif
+        static unsigned long lastSerialLogMs = 0;
+        static unsigned long lastSdLogMs = 0;
+        unsigned long now = millis();
         SensorSnapshot snapshot = SnapshotService_Read();
-        if (SYSTEM_MODE == MODE_FULL || SYSTEM_MODE == MODE_SENSORS_ONLY)
+        if ((SYSTEM_MODE == MODE_FULL || SYSTEM_MODE == MODE_SENSORS_ONLY) &&
+            now - lastSerialLogMs >= SERIAL_LOG_PERIOD_MS)
         {
             LoggingService_LogSnapshot(snapshot);
+            lastSerialLogMs = now;
         }
 
-        if (SYSTEM_MODE == MODE_FULL && ENABLE_SD_LOGGING_OUTPUT)
+        if (SYSTEM_MODE == MODE_FULL &&
+            ENABLE_SD_LOGGING_OUTPUT &&
+            now - lastSdLogMs >= SD_LOG_PERIOD_MS)
         {
             SDLoggingService_Append(snapshot);
+            lastSdLogMs = now;
         }
         vTaskDelay(delayTicks);
     }
@@ -223,7 +231,7 @@ static void TelemetryTask(void *parameter)
 #endif
         if (SYSTEM_MODE != MODE_FULL || !ENABLE_TELEMETRY_OUTPUT)
         {
-            vTaskDelay(pdMS_TO_TICKS(1000));
+            vTaskDelay(pdMS_TO_TICKS(100));
             continue;
         }
 

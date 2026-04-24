@@ -1,4 +1,5 @@
 #include "SDLoggingService.h"
+#include "system_config.h"
 #include <Arduino.h>
 #include <SD.h>
 #include <math.h>
@@ -16,7 +17,7 @@ static const char *formatValue(float value, char *buffer, size_t length, uint8_t
 {
     if (isnan(value))
     {
-        snprintf(buffer, length, "null");
+        snprintf(buffer, length, "%s", SENSOR_NULL_TEXT);
     }
     else
     {
@@ -25,7 +26,7 @@ static const char *formatValue(float value, char *buffer, size_t length, uint8_t
     return buffer;
 }
 
-void SDLoggingService_Init(bool sdAvailable)
+void SDLoggingService_Init(bool sdAvailable, const char *runTimestamp)
 {
     sdReady = sdAvailable;
     headerWritten = false;
@@ -37,6 +38,24 @@ void SDLoggingService_Init(bool sdAvailable)
     if (!SD.exists(kLogDir))
     {
         SD.mkdir(kLogDir);
+    }
+
+    if (runTimestamp != nullptr && runTimestamp[0] != '\0')
+    {
+        snprintf(logPath, sizeof(logPath), "%s/run_%s.csv", kLogDir, runTimestamp);
+        if (!SD.exists(logPath))
+        {
+            return;
+        }
+
+        for (uint8_t i = 1; i <= 99; ++i)
+        {
+            snprintf(logPath, sizeof(logPath), "%s/run_%s_%02u.csv", kLogDir, runTimestamp, static_cast<unsigned>(i));
+            if (!SD.exists(logPath))
+            {
+                return;
+            }
+        }
     }
 
     for (uint16_t i = 1; i <= 9999; ++i)

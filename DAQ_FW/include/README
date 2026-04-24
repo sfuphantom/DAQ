@@ -83,7 +83,3 @@ These support time-based logic across sensors and fault handling.
 * **Do not duplicate constants** in other files; always include `SystemConfig.h`.
 * **Only add universal settings** here—module‑specific configs should stay in their own headers.
 * When updating I2C addresses or log levels, **update this file only**, not each module.
-
----
-
-If you add more global configuration files (e.g., `CANConfig.h`, `SensorConfig.h`), document them here in the same format.

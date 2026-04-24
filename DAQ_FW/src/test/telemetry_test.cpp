@@ -16,5 +16,13 @@ void loop()
 {
     TELEMETRY_UART.println("telemetry test ping");
     Serial.println("sent telemetry test ping");
+
+    while (TELEMETRY_UART.available() > 0)
+    {
+        String line = TELEMETRY_UART.readStringUntil('\n');
+        Serial.print("received telemetry line: ");
+        Serial.println(line);
+    }
+
     delay(1000);
 }

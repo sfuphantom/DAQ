@@ -1,5 +1,6 @@
 #include "LoggingService.h"
 #include "Logger.h"
+#include "system_config.h"
 #include <Arduino.h>
 #include <math.h>
 #include <stdio.h>
@@ -8,7 +9,7 @@ static const char *formatSensorValue(float value, char *buffer, size_t length, u
 {
     if (isnan(value))
     {
-        snprintf(buffer, length, "null");
+        snprintf(buffer, length, "%s", SENSOR_NULL_TEXT);
     }
     else
     {

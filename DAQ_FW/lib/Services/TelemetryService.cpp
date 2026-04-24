@@ -10,7 +10,7 @@ static const char *formatValue(float value, char *buffer, size_t length, uint8_t
 {
     if (isnan(value))
     {
-        snprintf(buffer, length, "null");
+        snprintf(buffer, length, "%s", SENSOR_NULL_TEXT);
     }
     else
     {
