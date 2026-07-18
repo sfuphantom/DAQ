@@ -11,8 +11,8 @@ except ImportError:
     print("Missing dependency: pyserial\nInstall with: pip install pyserial", file=sys.stderr)
     raise
 
-EXPECTED_FIELDS = 10
-HEADER = "timestamp_ms,temp1_c,temp2_c,flow1_lpm,flow2_lpm,susp1,susp2,susp3,susp4,speed_kmh"
+EXPECTED_FIELDS = 13
+HEADER = "critical_timestamp_ms,chassis_timestamp_ms,wheel_speed_timestamp_ms,temp1_c,temp2_c,flow1_lpm,flow2_lpm,susp1,susp2,susp3,susp4,steering_angle_deg,speed_kmh"
 
 
 def parse_args():

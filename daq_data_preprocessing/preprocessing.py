@@ -11,13 +11,16 @@ try:
 except Exception:
     DRIVE_ROOT = None
 
-UNPROCESSED_DIR = os.path.join(SD_ROOT, "unprocessed")
 PROCESSED_DIR = os.path.join(DRIVE_ROOT, "processed") if DRIVE_ROOT else None
 
 WHEEL_SPEED_COLS = ["speed_fl_kmh", "speed_fr_kmh", "speed_rl_kmh", "speed_rr_kmh"]
 TEMP_COLS = ["temp1_c", "temp2_c"]
 FLOW_COLS = ["flow1_lpm", "flow2_lpm"]
 SUSP_COLS = ["susp1", "susp2", "susp3", "susp4"]
+SD_SUSP_COLS = ["susp1_v", "susp2_v", "susp3_v", "susp4_v"]
+SD_SUSP_ALIASES = dict(zip(SD_SUSP_COLS, SUSP_COLS))
+SENSOR_TIMESTAMP_COLS = ["critical_timestamp_ms", "chassis_timestamp_ms", "wheel_speed_timestamp_ms"]
+TIMESTAMP_COLS = ["timestamp_ms"] + SENSOR_TIMESTAMP_COLS
 
 # Outlier thresholds
 MAX_WHEEL_DELTA_KMH = 40.0  # per sample
@@ -28,6 +31,7 @@ SUSP_MAX = 4095.0
 
 # sampling interval 
 def _median_dt_ms(df):
+    _ensure_timestamp_ms(df)
     if "timestamp_ms" not in df.columns or len(df) < 2:
         return 1000
     diffs = df["timestamp_ms"].diff().dropna()
@@ -38,12 +42,38 @@ def _median_dt_ms(df):
 
 # creatting uniform timeline and re-indexing df 
 def _reindex_uniform(df, step_ms):
+    _ensure_timestamp_ms(df)
     start_ms = int(df["timestamp_ms"].min())
     end_ms = int(df["timestamp_ms"].max())
     full_index = range(start_ms, end_ms + 1, step_ms)
     df = df.set_index("timestamp_ms").reindex(full_index)
     df.index.name = "timestamp_ms"
     return df.reset_index()
+
+
+def _ensure_timestamp_ms(df):
+    for col in TIMESTAMP_COLS:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+
+    if "timestamp_ms" in df.columns:
+        return
+
+    timestamp_cols = [col for col in SENSOR_TIMESTAMP_COLS if col in df.columns]
+    if timestamp_cols:
+        df["timestamp_ms"] = df[timestamp_cols].max(axis=1, skipna=True)
+
+
+def _normalize_sd_schema(df):
+    for sd_col, canonical_col in SD_SUSP_ALIASES.items():
+        if sd_col not in df.columns:
+            continue
+
+        if canonical_col not in df.columns:
+            df.rename(columns={sd_col: canonical_col}, inplace=True)
+        else:
+            df[canonical_col] = df[canonical_col].fillna(df[sd_col])
+            df.drop(columns=[sd_col], inplace=True)
 
 
 def _fill_short_gaps(series, max_gap_samples, method):
@@ -78,9 +108,10 @@ def _remove_susp_outliers(series):
 def process_log(filepath):
     df = pd.read_csv(filepath)
     print("Reading log file ", filepath)
+    _normalize_sd_schema(df)
 
     # type checking the num values 
-    for col in WHEEL_SPEED_COLS + TEMP_COLS + FLOW_COLS + SUSP_COLS:
+    for col in TIMESTAMP_COLS + WHEEL_SPEED_COLS + TEMP_COLS + FLOW_COLS + SUSP_COLS:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors="coerce")
 
@@ -126,16 +157,17 @@ def run_pipeline():
     if DRIVE_ROOT is None:
         raise SystemExit("Missing DRIVE_ROOT. Set it in daq_local_config.py")
 
+    unprocessed_dir = os.path.join(SD_ROOT, "unprocessed")
     os.makedirs(PROCESSED_DIR, exist_ok=True)
     raw_dir = os.path.join(PROCESSED_DIR, "raw")
     os.makedirs(raw_dir, exist_ok=True)
-    if not os.path.isdir(UNPROCESSED_DIR):
-        raise SystemExit(f"Missing unprocessed dir: {UNPROCESSED_DIR}")
+    if not os.path.isdir(unprocessed_dir):
+        raise SystemExit(f"Missing unprocessed dir: {unprocessed_dir}")
 
-    files = [f for f in os.listdir(UNPROCESSED_DIR) if f.endswith(".csv")]
+    files = [f for f in os.listdir(unprocessed_dir) if f.endswith(".csv")]
 
     for file in files:
-        full_path = os.path.join(UNPROCESSED_DIR, file)
+        full_path = os.path.join(unprocessed_dir, file)
 
         print(f"Processing {file}")
         df_processed = process_log(full_path)

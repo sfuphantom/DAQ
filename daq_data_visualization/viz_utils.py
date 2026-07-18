@@ -5,6 +5,7 @@ import pandas as pd
 WHEEL_COLS = ["speed_fl_kmh", "speed_fr_kmh", "speed_rl_kmh", "speed_rr_kmh"]
 TEMP_COLS = ["temp1_c", "temp2_c"]
 FLOW_COLS = ["flow1_lpm", "flow2_lpm"]
+TIMESTAMP_COLS = ["timestamp_ms", "critical_timestamp_ms", "chassis_timestamp_ms", "wheel_speed_timestamp_ms"]
 
 DRIVEN_WHEELS = ["speed_rl_kmh", "speed_rr_kmh"]
 NON_DRIVEN_WHEELS = ["speed_fl_kmh", "speed_fr_kmh"]
@@ -24,12 +25,25 @@ def load_processed_files(processed_dir):
 
 
 def to_numeric(df, cols):
+    ensure_timestamp_ms(df)
     for col in cols:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors="coerce")
 
 
+def ensure_timestamp_ms(df):
+    if "timestamp_ms" in df.columns:
+        df["timestamp_ms"] = pd.to_numeric(df["timestamp_ms"], errors="coerce")
+        return
+
+    for col in TIMESTAMP_COLS[1:]:
+        if col in df.columns:
+            df["timestamp_ms"] = pd.to_numeric(df[col], errors="coerce")
+            return
+
+
 def dt_ms(df):
+    ensure_timestamp_ms(df)
     if "timestamp_ms" not in df.columns or len(df) < 2:
         return 1000
     diffs = df["timestamp_ms"].diff().dropna()
