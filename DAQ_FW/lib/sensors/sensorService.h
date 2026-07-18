@@ -1,7 +1,7 @@
 #pragma once
 
-#include "SnapshotService.h"
+#include "snapshotService.h"
 
-void SensorService_Init();
-void SensorService_ReadCritical(SensorSnapshot &snapshot);
-void SensorService_ReadChassis(SensorSnapshot &snapshot);
+void sensorServiceInit();
+void sensorServiceReadCritical(SensorSnapshot &snapshot);
+void sensorServiceReadChassis(SensorSnapshot &snapshot);

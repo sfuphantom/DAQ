@@ -3,30 +3,29 @@
 
 #include <Wire.h>
 #include <Adafruit_ADS1X15.h>
-#include "Logger.h"
-#include "system_config.h"
+#include "logger.h"
+#include "systemConfig.h"
 
-class IADCSensor
-{
+class IADCSensor {
 public:
     IADCSensor(const char *_SensorName, const uint16_t _SensorID, const ADCAddress _ADCAddress, Adafruit_ADS1115 *adsDevice);
 
     // call after the shared ADS chip has been initialized
-    void Initialize(bool chipOnline);
+    void initialize(bool chipOnline);
 
     // -Reads 16 bits of data from the current mADC
-    int16_t Read();
+    int16_t read();
 
-    float GetData();
+    float getData();
 
     // processing code goes here, to be overwritten for different sensor types
     // converts voltage to sensor data, include warnings, errors
-    virtual float Process(float inputData) = 0;
+    virtual float process(float inputData) = 0;
 
     // for logging the address of the current ADC
-    const char *PrintAddress();
+    const char *printAddress();
 
-    bool IsOnline() const;
+    bool isOnline() const;
 
 private:
     Adafruit_ADS1115 *mADS;
@@ -41,46 +40,42 @@ private:
 };
 
 // example implementation of the senor child class
-class ChildExample : public IADCSensor
-{
+class ChildExample : public IADCSensor {
 public:
     ChildExample(const char *_SensorName, const uint16_t _SensorID, const ADCAddress _ADCAddress, Adafruit_ADS1115 *adsDevice)
         : IADCSensor(_SensorName, _SensorID, _ADCAddress, adsDevice) {}
-    float Process(float InputData);
+    float process(float InputData);
 };
 
-class CoolantTemperatureSensor : public IADCSensor
-{
+class CoolantTemperatureSensor : public IADCSensor {
     public:
         CoolantTemperatureSensor(const char *_SensorName, const uint16_t _SensorID, const ADCAddress _ADCAddress, Adafruit_ADS1115 *adsDevice)
             : IADCSensor(_SensorName, _SensorID, _ADCAddress, adsDevice) {}
-        
+
         // convert ADC readings to Temperature values
-        float Process(float inputData) override; 
+        float process(float inputData) override;
 
     private:
         float convertToTemperature(float inputData);
 };
 
-class SteeringAngleSensor : public IADCSensor
-{
+class SteeringAngleSensor : public IADCSensor {
     public:
         SteeringAngleSensor(const char *_SensorName, const uint16_t _SensorID, const ADCAddress _ADCAddress, Adafruit_ADS1115 *adsDevice)
             : IADCSensor(_SensorName, _SensorID, _ADCAddress, adsDevice) {}
 
-        float Process(float inputData) override;
+        float process(float inputData) override;
 
     private:
         float convertToAngleDegrees(float inputData);
 };
 
-class SuspensionSensor : public IADCSensor
-{
+class SuspensionSensor : public IADCSensor {
     public:
         SuspensionSensor(const char *_SensorName, const uint16_t _SensorID, const ADCAddress _ADCAddress, Adafruit_ADS1115 *adsDevice)
             : IADCSensor(_SensorName, _SensorID, _ADCAddress, adsDevice) {}
 
-        float Process(float inputData) override;
+        float process(float inputData) override;
 };
 
 #endif

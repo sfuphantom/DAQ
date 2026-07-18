@@ -2,7 +2,7 @@
 
 #include <Arduino.h>
 
-void FlowPulse_Init();
-void FlowPulse_Update();
-float FlowPulse_GetFlow1Lpm();
-float FlowPulse_GetFlow2Lpm();
+void flowPulseInit();
+void flowPulseUpdate();
+float flowPulseGetFlow1Lpm();
+float flowPulseGetFlow2Lpm();

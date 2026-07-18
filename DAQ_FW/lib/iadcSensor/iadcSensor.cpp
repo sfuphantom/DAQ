@@ -1,4 +1,4 @@
-#include "IADCSensor.h"
+#include "iadcSensor.h"
 #include <math.h>
 
 // ADC INFO
@@ -22,64 +22,54 @@
 IADCSensor::IADCSensor(const char *_SensorName, const uint16_t _SensorID, const ADCAddress _ADCAddress, Adafruit_ADS1115 *adsDevice)
     : mADS(adsDevice), mSensorName(_SensorName), mSensorID(_SensorID), mADC_Address(_ADCAddress) {}
 
-void IADCSensor::Initialize(bool chipOnline)
-{
-    if (mADS == nullptr || !chipOnline)
-    {
+void IADCSensor::initialize(bool chipOnline) {
+    if (mADS == nullptr || !chipOnline) {
         mInitialized = false;
-        Logger::Error("ADC %s unavailable for sensor %s", PrintAddress(), mSensorName);
+        Logger::error("ADC %s unavailable for sensor %s", printAddress(), mSensorName);
         return;
     }
 
     mInitialized = true;
-    Logger::Notice("Sensor %s attached to ADC %s channel %u", mSensorName, PrintAddress(), mSensorID);
+    Logger::notice("Sensor %s attached to ADC %s channel %u", mSensorName, printAddress(), mSensorID);
 }
 
-float IADCSensor::GetData()
-{
-    if (!mInitialized)
-    {
+float IADCSensor::getData() {
+    if (!mInitialized) {
         return NAN;
     }
 
     // gets bit data from the adc
-    int16_t raw_data = Read();
+    int16_t raw_data = read();
 
-    Logger::Trace("Initial Data: %d from sensor %s with ID: %u and ads component %s",
-                  raw_data, mSensorName, mSensorID, PrintAddress());
+    Logger::trace("Initial Data: %d from sensor %s with ID: %u and ads component %s",
+                  raw_data, mSensorName, mSensorID, printAddress());
 
     // adc bit to voltage conversion, gain mode can be set via the adc library
-    float final_data = Process(mADS->computeVolts(raw_data)); // Process is overidden by the child class
-    
-    Logger::Notice("Processed Data: %.4f, from sensor %s with ID: %u and adc component %s",
-                   final_data, mSensorName, mSensorID, PrintAddress());
+    float final_data = process(mADS->computeVolts(raw_data)); // process is overidden by the child class
+
+    Logger::trace("Processed Data: %.4f, from sensor %s with ID: %u and adc component %s",
+                  final_data, mSensorName, mSensorID, printAddress());
 
     return (float)final_data;
 }
 
-int16_t IADCSensor::Read()
-{
-    if (!mInitialized)
-    {
+int16_t IADCSensor::read() {
+    if (!mInitialized) {
         return 0;
     }
 
-    // testing read function - NOT FINAL
     int16_t adcBitData = mADS->readADC_SingleEnded(mSensorID);
 
     return (int16_t)adcBitData;
 }
 
-float ChildExample::Process(float InputData)
-{   
-    Logger::Error("Using example class");
+float ChildExample::process(float InputData) {
+    Logger::error("Using example class");
     return InputData;
 }
 
-const char *IADCSensor::PrintAddress()
-{
-    switch (mADC_Address)
-    {
+const char *IADCSensor::printAddress() {
+    switch (mADC_Address) {
     case ADCAddress::U1:
         return "U1";
     case ADCAddress::U2:
@@ -93,19 +83,16 @@ const char *IADCSensor::PrintAddress()
     }
 }
 
-bool IADCSensor::IsOnline() const
-{
+bool IADCSensor::isOnline() const {
     return mInitialized;
 }
 
-float CoolantTemperatureSensor::Process(float inputData)
-{
+float CoolantTemperatureSensor::process(float inputData) {
     float temperature = convertToTemperature(inputData);
     return temperature;
 }
 
-float CoolantTemperatureSensor::convertToTemperature(float inputData)
-{
+float CoolantTemperatureSensor::convertToTemperature(float inputData) {
     // CTTS-302651-F01
     // Convert voltage -> thermistor resistance using a divider, then apply Beta equation.
     const float vRef = 5.0f;          // ADC reference / divider supply
@@ -124,27 +111,23 @@ float CoolantTemperatureSensor::convertToTemperature(float inputData)
     // temp goes up, resistance goes down
     float temperatureK = 1.0f / ((1.0f / t25K) + (1.0f / beta) * log(rTherm / r25));
     float temperature = temperatureK - 273.15f;
- 
-    return temperature; 
+
+    return temperature;
 }
 
-float SteeringAngleSensor::Process(float inputData)
-{
+float SteeringAngleSensor::process(float inputData) {
     return convertToAngleDegrees(inputData);
 }
 
-float SteeringAngleSensor::convertToAngleDegrees(float inputData)
-{
+float SteeringAngleSensor::convertToAngleDegrees(float inputData) {
     if (!isfinite(inputData)) return NAN;
     if (STEERING_ANGLE_MAX_V <= STEERING_ANGLE_MIN_V) return NAN;
 
     float clampedVoltage = inputData;
-    if (clampedVoltage < STEERING_ANGLE_MIN_V)
-    {
+    if (clampedVoltage < STEERING_ANGLE_MIN_V) {
         clampedVoltage = STEERING_ANGLE_MIN_V;
     }
-    else if (clampedVoltage > STEERING_ANGLE_MAX_V)
-    {
+    else if (clampedVoltage > STEERING_ANGLE_MAX_V) {
         clampedVoltage = STEERING_ANGLE_MAX_V;
     }
 
@@ -153,8 +136,7 @@ float SteeringAngleSensor::convertToAngleDegrees(float inputData)
     return normalized * STEERING_ANGLE_FULL_SCALE_DEG;
 }
 
-float SuspensionSensor::Process(float inputData)
-{
+float SuspensionSensor::process(float inputData) {
     if (!isfinite(inputData)) return NAN;
     return inputData;
 }

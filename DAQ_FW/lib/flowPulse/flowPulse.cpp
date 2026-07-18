@@ -1,10 +1,9 @@
-#include "FlowPulse.h"
-#include "Logger.h"
-#include "system_config.h"
+#include "flowPulse.h"
+#include "logger.h"
+#include "systemConfig.h"
 #include <math.h>
 
-namespace
-{
+namespace {
     volatile uint32_t gFlow1PulseCount = 0;
     volatile uint32_t gFlow2PulseCount = 0;
     portMUX_TYPE gFlowMux = portMUX_INITIALIZER_UNLOCKED;
@@ -14,24 +13,20 @@ namespace
     uint32_t gLastSampleMs = 0;
     bool gInitialized = false;
 
-    void IRAM_ATTR Flow1ISR()
-    {
+    void IRAM_ATTR flow1Isr() {
         portENTER_CRITICAL_ISR(&gFlowMux);
         ++gFlow1PulseCount;
         portEXIT_CRITICAL_ISR(&gFlowMux);
     }
 
-    void IRAM_ATTR Flow2ISR()
-    {
+    void IRAM_ATTR flow2Isr() {
         portENTER_CRITICAL_ISR(&gFlowMux);
         ++gFlow2PulseCount;
         portEXIT_CRITICAL_ISR(&gFlowMux);
     }
 
-    float pulsesToLpm(uint32_t pulses, float samplePeriodSec)
-    {
-        if (samplePeriodSec <= 0.0f)
-        {
+    float pulsesToLpm(uint32_t pulses, float samplePeriodSec) {
+        if (samplePeriodSec <= 0.0f) {
             return NAN;
         }
 
@@ -40,8 +35,7 @@ namespace
     }
 }
 
-void FlowPulse_Init()
-{
+void flowPulseInit() {
     portENTER_CRITICAL(&gFlowMux);
     gFlow1PulseCount = 0;
     gFlow2PulseCount = 0;
@@ -52,29 +46,26 @@ void FlowPulse_Init()
 
 #if ENABLE_FLOW_SENSOR_1
     pinMode(static_cast<uint8_t>(FLOW_SENSOR_1_PIN), INPUT_PULLUP);
-    attachInterrupt(static_cast<uint8_t>(FLOW_SENSOR_1_PIN), Flow1ISR, FALLING);
+    attachInterrupt(static_cast<uint8_t>(FLOW_SENSOR_1_PIN), flow1Isr, FALLING);
 #endif
 #if ENABLE_FLOW_SENSOR_2
     pinMode(static_cast<uint8_t>(FLOW_SENSOR_2_PIN), INPUT_PULLUP);
-    attachInterrupt(static_cast<uint8_t>(FLOW_SENSOR_2_PIN), Flow2ISR, FALLING);
+    attachInterrupt(static_cast<uint8_t>(FLOW_SENSOR_2_PIN), flow2Isr, FALLING);
 #endif
 
     gInitialized = true;
-    Logger::Notice("Flow pulse module initialized (window=%lu ms)",
+    Logger::notice("Flow pulse module initialized (window=%lu ms)",
                    static_cast<unsigned long>(FLOW_SENSOR_SAMPLE_WINDOW_MS));
 }
 
-void FlowPulse_Update()
-{
-    if (!gInitialized)
-    {
+void flowPulseUpdate() {
+    if (!gInitialized) {
         return;
     }
 
     uint32_t nowMs = millis();
     uint32_t elapsedMs = nowMs - gLastSampleMs;
-    if (elapsedMs < FLOW_SENSOR_SAMPLE_WINDOW_MS)
-    {
+    if (elapsedMs < FLOW_SENSOR_SAMPLE_WINDOW_MS) {
         return;
     }
 
@@ -104,12 +95,10 @@ void FlowPulse_Update()
 #endif
 }
 
-float FlowPulse_GetFlow1Lpm()
-{
+float flowPulseGetFlow1Lpm() {
     return gFlow1Lpm;
 }
 
-float FlowPulse_GetFlow2Lpm()
-{
+float flowPulseGetFlow2Lpm() {
     return gFlow2Lpm;
 }
