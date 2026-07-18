@@ -1,7 +1,7 @@
 #include "Arduino.h"
 #include <Wire.h>
 
-#include "IMUSensor.h"
+#include "imuSensor.h"
 
 IMU_Sensor::IMU_Sensor(void) {}
 
