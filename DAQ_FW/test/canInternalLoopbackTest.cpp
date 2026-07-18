@@ -1,12 +1,11 @@
 #include <Arduino.h>
 #include <driver/twai.h>
 #include <esp_err.h>
-#include "system_config.h"
+#include "systemConfig.h"
 
 static bool canReady = false;
 
-void setup()
-{
+void setup() {
     Serial.begin(BAUD_RATE);
     delay(1000);
 
@@ -23,15 +22,13 @@ void setup()
     twai_filter_config_t filterConfig = TWAI_FILTER_CONFIG_ACCEPT_ALL();
 
     esp_err_t installResult = twai_driver_install(&generalConfig, &timingConfig, &filterConfig);
-    if (installResult != ESP_OK)
-    {
+    if (installResult != ESP_OK) {
         Serial.printf("CAN driver install failed: %s\n", esp_err_to_name(installResult));
         return;
     }
 
     esp_err_t startResult = twai_start();
-    if (startResult != ESP_OK)
-    {
+    if (startResult != ESP_OK) {
         Serial.printf("CAN driver start failed: %s\n", esp_err_to_name(startResult));
         return;
     }
@@ -40,10 +37,8 @@ void setup()
     Serial.println("CAN driver started");
 }
 
-void loop()
-{
-    if (!canReady)
-    {
+void loop() {
+    if (!canReady) {
         Serial.println("CAN driver not ready");
         delay(1000);
         return;
@@ -57,8 +52,7 @@ void loop()
     message.data[1] = 0xFE;
 
     esp_err_t txResult = twai_transmit(&message, pdMS_TO_TICKS(100));
-    if (txResult != ESP_OK)
-    {
+    if (txResult != ESP_OK) {
         Serial.printf("Internal loopback TX failed: %s\n", esp_err_to_name(txResult));
         delay(1000);
         return;
@@ -66,16 +60,14 @@ void loop()
 
     twai_message_t received = {};
     esp_err_t rxResult = twai_receive(&received, pdMS_TO_TICKS(1000));
-    if (rxResult == ESP_OK)
-    {
+    if (rxResult == ESP_OK) {
         Serial.printf(
             "Internal loopback OK id=0x%03X data=%02X %02X\n",
             received.identifier,
             received.data[0],
             received.data[1]);
     }
-    else
-    {
+    else {
         Serial.printf("Internal loopback RX failed: %s\n", esp_err_to_name(rxResult));
     }
 

@@ -1,12 +1,11 @@
 #include <Arduino.h>
 #include <Wire.h>
 #include <RTClib.h>
-#include "system_config.h"
+#include "systemConfig.h"
 
 RTC_DS3231 rtc;
 
-void setup()
-{
+void setup() {
     Serial.begin(BAUD_RATE);
     delay(1000);
 
@@ -14,26 +13,22 @@ void setup()
     Serial.println("RTC test started");
     Serial.printf("SDA=%d SCL=%d\n", I2C_SDA_PIN, I2C_SCL_PIN);
 
-    if (!rtc.begin())
-    {
+    if (!rtc.begin()) {
         Serial.println("RTC init failed");
         return;
     }
 
     Serial.println("RTC init OK");
 
-    if (rtc.lostPower())
-    {
+    if (rtc.lostPower()) {
         Serial.println("RTC lost power");
     }
-    else
-    {
+    else {
         Serial.println("RTC power OK");
     }
 }
 
-void loop()
-{
+void loop() {
     DateTime now = rtc.now();
     Serial.printf(
         "RTC now: %04d-%02d-%02d %02d:%02d:%02d\n",
