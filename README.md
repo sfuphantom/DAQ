@@ -74,7 +74,8 @@ The purpose of the DAQ system is to monitor, log, and analyze sensor data in rea
     
 - **Build System:** PlatformIO (VS Code or CLI via `pio`).
     
-- **Key Modules:** 
+**Key Modules**
+
 | Module | Location | Purpose | Notes |
 | --- | --- | --- | --- |
 | **Main firmware** | `DAQ_FW/src/main.cpp` | Initializes hardware and starts runtime tasks. | Sets up UART, CAN, SD, sensors, and watchdog. |
