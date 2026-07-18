@@ -1,58 +1,51 @@
 #ifndef LOGGER_LIB
 #define LOGGER_LIB
 
-#include "system_config.h"
+#include "systemConfig.h"
 #include "ArduinoLog.h"
 
-namespace Logger
-{
+namespace Logger {
 
-    void Start();
+    void start();
 
     template <class T, typename... Args>
-    void Verbose(T msg, Args... args)
-    {
+    void verbose(T msg, Args... args) {
         Log.verboseln(msg, args...);
     }
 
     template <class T, typename... Args>
-    void Trace(T msg, Args... args)
-    {
+    void trace(T msg, Args... args) {
         Log.traceln(msg, args...);
     }
 
     template <class T, typename... Args>
-    void Notice(T msg, Args... args)
-    {
+    void notice(T msg, Args... args) {
         Log.noticeln(msg, args...);
     }
 
     template <class T, typename... Args>
-    void Warning(T msg, Args... args)
-    {
+    void warning(T msg, Args... args) {
         Log.warningln(msg, args...);
     }
 
     template <class T, typename... Args>
-    void Error(T msg, Args... args)
-    {
+    void error(T msg, Args... args) {
         Log.errorln(msg, args...);
     }
 
     template <class T, typename... Args>
-    void Fatal(T msg, Args... args)
-    {
+    void fatal(T msg, Args... args) {
         Log.fatalln(msg, args...);
     }
 
 }
 
-static void PrintLevel(Print *_logOutput, int logLevel);
+static void printLevel(Print *_logOutput, int logLevel);
 
-static void PrintTimestamp(Print *_logOutput);
+static void printTimestamp(Print *_logOutput);
 
-static void PrintPrefix(Print *_logOutput, int logLevel);
+static void printPrefix(Print *_logOutput, int logLevel);
 
-static void PrintSuffix(Print *_logOutput, int logLevel);
+static void printSuffix(Print *_logOutput, int logLevel);
 
 #endif

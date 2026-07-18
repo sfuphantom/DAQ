@@ -1,35 +1,33 @@
-#include "TelemetryService.h"
-#include "Logger.h"
+#include "telemetryService.h"
+#include "logger.h"
 #include "can.h"
-#include "system_config.h"
+#include "systemConfig.h"
 #include <Arduino.h>
 #include <math.h>
 #include <stdio.h>
 
-static const char *formatValue(float value, char *buffer, size_t length, uint8_t precision)
-{
-    if (isnan(value))
-    {
+static const char *formatValue(float value, char *buffer, size_t length, uint8_t precision) {
+    if (isnan(value)) {
         snprintf(buffer, length, "%s", SENSOR_NULL_TEXT);
     }
-    else
-    {
+    else {
         snprintf(buffer, length, "%.*f", precision, value);
     }
     return buffer;
 }
 
-void TelemetryService_SendWheelSpeed(float wheelSpeedKmh)
-{
+void telemetryServiceSendWheelSpeed(float wheelSpeedKmh) {
     int16_t speedCentiKmh = static_cast<int16_t>(wheelSpeedKmh * 100.0f);
-    CAN_SendInt16(static_cast<uint16_t>(CANMessageId::WheelSpeed), speedCentiKmh);
+    canSendInt16(static_cast<uint16_t>(CANMessageId::WheelSpeed), speedCentiKmh);
+#if ENABLE_STATUS_LOGS
+    char speedBuffer[16];
     Serial.println();
-    Logger::Trace("[WheelSpeed] %.2f km/h (centi=%d)", wheelSpeedKmh, speedCentiKmh);
+    Logger::trace("[WheelSpeed] %s km/h (centi=%d)", formatValue(wheelSpeedKmh, speedBuffer, sizeof(speedBuffer), 2), static_cast<int>(speedCentiKmh));
     Serial.println();
+#endif
 }
 
-void TelemetryService_SendKnownWheelSpeedTestPattern()
-{
+void telemetryServiceSendKnownWheelSpeedTestPattern() {
     static const float speeds[] = {0.00f, 10.0f, 30.0f, 60.0f, 100.0f};
     static int idx = 0;
     static unsigned long lastSend = 0;
@@ -37,14 +35,14 @@ void TelemetryService_SendKnownWheelSpeedTestPattern()
     unsigned long now = millis();
     if (now - lastSend >= 500) {
         float s = speeds[idx];
-        TelemetryService_SendWheelSpeed(s);
+        telemetryServiceSendWheelSpeed(s);
         idx = (idx + 1) % (sizeof(speeds) / sizeof(speeds[0]));
         lastSend = now;
     }
 }
 
-void TelemetryService_SendSnapshotCSV(const SensorSnapshot &snapshot)
-{
+void telemetryServiceSendSnapshotCsv(const SensorSnapshot &snapshot) {
+    static uint32_t rowsSent = 0;
     char temp1Buffer[16];
     char temp2Buffer[16];
     char flow1Buffer[16];
@@ -56,7 +54,11 @@ void TelemetryService_SendSnapshotCSV(const SensorSnapshot &snapshot)
     char steeringAngleBuffer[16];
     char speedBuffer[16];
 
-    TELEMETRY_UART.print(snapshot.timestampMs);
+    TELEMETRY_UART.print(snapshot.criticalTimestampMs);
+    TELEMETRY_UART.print(",");
+    TELEMETRY_UART.print(snapshot.chassisTimestampMs);
+    TELEMETRY_UART.print(",");
+    TELEMETRY_UART.print(snapshot.wheelSpeedTimestampMs);
     TELEMETRY_UART.print(",");
     TELEMETRY_UART.print(formatValue(snapshot.temp1, temp1Buffer, sizeof(temp1Buffer), 1));
     TELEMETRY_UART.print(",");
@@ -77,4 +79,11 @@ void TelemetryService_SendSnapshotCSV(const SensorSnapshot &snapshot)
     TELEMETRY_UART.print(formatValue(snapshot.steeringAngleDeg, steeringAngleBuffer, sizeof(steeringAngleBuffer), 1));
     TELEMETRY_UART.print(",");
     TELEMETRY_UART.println(formatValue(snapshot.speedKmh, speedBuffer, sizeof(speedBuffer), 2));
+
+#if ENABLE_STATUS_LOGS
+    ++rowsSent;
+    if (rowsSent == 1 || rowsSent % 100 == 0) {
+        Logger::notice("Telemetry rows sent: %lu", static_cast<unsigned long>(rowsSent));
+    }
+#endif
 }

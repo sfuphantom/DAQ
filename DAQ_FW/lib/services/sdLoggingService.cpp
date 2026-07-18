@@ -1,92 +1,98 @@
-#include "SDLoggingService.h"
-#include "system_config.h"
+#include "sdLoggingService.h"
+#include "logger.h"
+#include "rtcService.h"
+#include "systemConfig.h"
 #include <Arduino.h>
 #include <SD.h>
 #include <math.h>
 #include <stdio.h>
 
-namespace
-{
+namespace {
     bool sdReady = false;
     bool headerWritten = false;
+    uint32_t rowsWritten = 0;
     const char *kLogDir = "/unprocessed";
     char logPath[64] = "/unprocessed/log_0001.csv";
 }
 
-static const char *formatValue(float value, char *buffer, size_t length, uint8_t precision)
-{
-    if (isnan(value))
-    {
+static const char *formatValue(float value, char *buffer, size_t length, uint8_t precision) {
+    if (isnan(value)) {
         snprintf(buffer, length, "%s", SENSOR_NULL_TEXT);
     }
-    else
-    {
+    else {
         snprintf(buffer, length, "%.*f", precision, value);
     }
     return buffer;
 }
 
-void SDLoggingService_Init(bool sdAvailable, const char *runTimestamp)
-{
+void sdLoggingServiceInit(bool sdAvailable, const char *runTimestamp) {
     sdReady = sdAvailable;
     headerWritten = false;
-    if (!sdReady)
-    {
+    rowsWritten = 0;
+    if (!sdReady) {
+#if ENABLE_STATUS_LOGS
+        Logger::notice("SD logging disabled");
+#endif
         return;
     }
 
-    if (!SD.exists(kLogDir))
-    {
-        SD.mkdir(kLogDir);
+    if (!SD.exists(kLogDir)) {
+        if (!SD.mkdir(kLogDir)) {
+            Logger::error("SD log directory create failed: %s", kLogDir);
+        }
     }
 
-    if (runTimestamp != nullptr && runTimestamp[0] != '\0')
-    {
+    if (runTimestamp != nullptr && runTimestamp[0] != '\0') {
         snprintf(logPath, sizeof(logPath), "%s/run_%s.csv", kLogDir, runTimestamp);
-        if (!SD.exists(logPath))
-        {
+        if (!SD.exists(logPath)) {
+#if ENABLE_STATUS_LOGS
+            Logger::notice("SD log path: %s", logPath);
+#endif
             return;
         }
 
-        for (uint8_t i = 1; i <= 99; ++i)
-        {
+        for (uint8_t i = 1; i <= 99; ++i) {
             snprintf(logPath, sizeof(logPath), "%s/run_%s_%02u.csv", kLogDir, runTimestamp, static_cast<unsigned>(i));
-            if (!SD.exists(logPath))
-            {
+            if (!SD.exists(logPath)) {
+#if ENABLE_STATUS_LOGS
+                Logger::notice("SD log path: %s", logPath);
+#endif
                 return;
             }
         }
     }
 
-    for (uint16_t i = 1; i <= 9999; ++i)
-    {
+    for (uint16_t i = 1; i <= 9999; ++i) {
         snprintf(logPath, sizeof(logPath), "%s/log_%04u.csv", kLogDir, static_cast<unsigned>(i));
-        if (!SD.exists(logPath))
-        {
+        if (!SD.exists(logPath)) {
+#if ENABLE_STATUS_LOGS
+            Logger::notice("SD log path: %s", logPath);
+#endif
             break;
         }
     }
 }
 
-void SDLoggingService_Append(const SensorSnapshot &snapshot)
-{
-    if (!sdReady)
-    {
+void sdLoggingServiceAppend(const SensorSnapshot &snapshot) {
+    if (!sdReady) {
         return;
     }
 
     File file = SD.open(logPath, FILE_APPEND);
-    if (!file)
-    {
+    if (!file) {
+        Logger::error("SD log open failed: %s", logPath);
         return;
     }
 
-    if (!headerWritten)
-    {
-        file.println("timestamp_ms,temp1_c,temp2_c,flow1_lpm,flow2_lpm,susp1,susp2,susp3,susp4,steering_angle_deg,speed_fl_kmh,speed_fr_kmh,speed_rl_kmh,speed_rr_kmh,speed_kmh,fault_active");
+    if (!headerWritten) {
+        file.println("critical_timestamp_ms,chassis_timestamp_ms,wheel_speed_timestamp_ms,rtc_time,temp1_c,temp2_c,flow1_lpm,flow2_lpm,susp1_v,susp2_v,susp3_v,susp4_v,steering_angle_deg,speed_fl_kmh,speed_fr_kmh,speed_rl_kmh,speed_rr_kmh,speed_kmh,fault_active");
         headerWritten = true;
+#if ENABLE_STATUS_LOGS
+        Logger::notice("SD log header written: %s", logPath);
+#endif
     }
 
+    char rtcTimeBuffer[24];
     char temp1Buffer[16];
     char temp2Buffer[16];
     char flow1Buffer[16];
@@ -102,7 +108,18 @@ void SDLoggingService_Append(const SensorSnapshot &snapshot)
     char speedRRBuffer[16];
     char speedBuffer[16];
 
-    file.print(snapshot.timestampMs);
+    file.print(snapshot.criticalTimestampMs);
+    file.print(",");
+    file.print(snapshot.chassisTimestampMs);
+    file.print(",");
+    file.print(snapshot.wheelSpeedTimestampMs);
+    file.print(",");
+    if (rtcServiceGetCurrentTimestamp(rtcTimeBuffer, sizeof(rtcTimeBuffer))) {
+        file.print(rtcTimeBuffer);
+    }
+    else {
+        file.print(SENSOR_NULL_TEXT);
+    }
     file.print(",");
     file.print(formatValue(snapshot.temp1, temp1Buffer, sizeof(temp1Buffer), 1));
     file.print(",");
@@ -135,4 +152,15 @@ void SDLoggingService_Append(const SensorSnapshot &snapshot)
     file.println(snapshot.faultActive ? 1 : 0);
 
     file.close();
+    ++rowsWritten;
+
+    if (rowsWritten == 1 || rowsWritten % 100 == 0) {
+#if ENABLE_STATUS_LOGS
+        Logger::notice("SD log rows written: %lu (%s)", static_cast<unsigned long>(rowsWritten), logPath);
+#endif
+    }
+}
+
+const char *sdLoggingServiceLogPath() {
+    return logPath;
 }

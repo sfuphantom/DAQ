@@ -1,29 +1,25 @@
-#include "RTCService.h"
-#include "Logger.h"
+#include "rtcService.h"
+#include "logger.h"
 #include <RTClib.h>
 #include <stdio.h>
 
-namespace
-{
+namespace {
     RTC_DS3231 rtc;
     bool rtcReady = false;
     char bootTimestamp[16] = "";
 }
 
-bool RTCService_Init()
-{
+bool rtcServiceInit() {
     rtcReady = false;
     bootTimestamp[0] = '\0';
 
-    if (!rtc.begin())
-    {
-        Logger::Error("RTC init failed");
+    if (!rtc.begin()) {
+        Logger::error("RTC init failed");
         return false;
     }
 
-    if (rtc.lostPower())
-    {
-        Logger::Error("RTC lost power; timestamped log filename disabled");
+    if (rtc.lostPower()) {
+        Logger::error("RTC lost power; timestamped log filename disabled");
         return false;
     }
 
@@ -40,17 +36,36 @@ bool RTCService_Init()
         static_cast<unsigned>(now.second()));
 
     rtcReady = true;
-    Logger::Notice("RTC init OK");
+#if ENABLE_STATUS_LOGS
+    Logger::notice("RTC init OK");
+#endif
     return true;
 }
 
-bool RTCService_GetBootTimestamp(char *buffer, size_t length)
-{
-    if (!rtcReady || buffer == nullptr || length == 0)
-    {
+bool rtcServiceGetBootTimestamp(char *buffer, size_t length) {
+    if (!rtcReady || buffer == nullptr || length == 0) {
         return false;
     }
 
     snprintf(buffer, length, "%s", bootTimestamp);
+    return true;
+}
+
+bool rtcServiceGetCurrentTimestamp(char *buffer, size_t length) {
+    if (!rtcReady || buffer == nullptr || length == 0) {
+        return false;
+    }
+
+    DateTime now = rtc.now();
+    snprintf(
+        buffer,
+        length,
+        "%04u-%02u-%02u %02u:%02u:%02u",
+        static_cast<unsigned>(now.year()),
+        static_cast<unsigned>(now.month()),
+        static_cast<unsigned>(now.day()),
+        static_cast<unsigned>(now.hour()),
+        static_cast<unsigned>(now.minute()),
+        static_cast<unsigned>(now.second()));
     return true;
 }

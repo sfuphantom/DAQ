@@ -1,4 +1,4 @@
-#include "Logger.h"
+#include "logger.h"
 
 // Output Log Template:
 // TIME [LOG_LEVEL] : LOG INFO STRING
@@ -8,20 +8,17 @@
 
 // Wrapper function to be called at setup
 // Sets up the log message template
-void Logger::Start()
-{
+void Logger::start() {
     Serial.begin(BAUD_RATE);
-    Log.setPrefix(PrintPrefix);
-    Log.setSuffix(PrintSuffix);
+    Log.setPrefix(printPrefix);
+    Log.setSuffix(printSuffix);
     Log.begin(CURRENT_LOG_LEVEL, &Serial, false);
     Log.infoln("ArduinoLog System Start Success");
 }
 
-static void PrintLevel(Print *_logOutput, int logLevel)
-{
+static void printLevel(Print *_logOutput, int logLevel) {
     /// Show log description based on log level
-    switch (logLevel)
-    {
+    switch (logLevel) {
     case 0:
         _logOutput->print("[SILENT] : ");
         break;
@@ -49,8 +46,8 @@ static void PrintLevel(Print *_logOutput, int logLevel)
     }
 }
 
-static void PrintTimestamp(Print *_logOutput) // unedited ArduinoLog timesamp
-{
+static void printTimestamp(Print *_logOutput) {
+    // unedited ArduinoLog timesamp
     // Total time
     const uint32_t msecs = millis();
     const uint32_t secs = msecs / 1000U;
@@ -67,13 +64,11 @@ static void PrintTimestamp(Print *_logOutput) // unedited ArduinoLog timesamp
     _logOutput->print(timestamp);
 }
 
-static void PrintPrefix(Print *_logOutput, int logLevel)
-{
-    PrintTimestamp(_logOutput);
-    PrintLevel(_logOutput, logLevel);
+static void printPrefix(Print *_logOutput, int logLevel) {
+    printTimestamp(_logOutput);
+    printLevel(_logOutput, logLevel);
 }
 
-static void PrintSuffix(Print *_logOutput, int logLevel)
-{
+static void printSuffix(Print *_logOutput, int logLevel) {
     _logOutput->print(" ");
 }

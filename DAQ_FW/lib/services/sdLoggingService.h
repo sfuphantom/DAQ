@@ -1,6 +1,7 @@
 #pragma once
 
-#include "SnapshotService.h"
+#include "snapshotService.h"
 
-void SDLoggingService_Init(bool sdAvailable, const char *runTimestamp = nullptr);
-void SDLoggingService_Append(const SensorSnapshot &snapshot);
+void sdLoggingServiceInit(bool sdAvailable, const char *runTimestamp = nullptr);
+void sdLoggingServiceAppend(const SensorSnapshot &snapshot);
+const char *sdLoggingServiceLogPath();

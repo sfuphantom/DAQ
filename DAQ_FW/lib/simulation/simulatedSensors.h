@@ -1,5 +1,5 @@
 #pragma once
 
-#include "SnapshotService.h"
+#include "snapshotService.h"
 
-void SimulatedSensors_FillSnapshot(SensorSnapshot &snapshot, uint32_t nowMs);
+void simulatedSensorsFillSnapshot(SensorSnapshot &snapshot, uint32_t nowMs);

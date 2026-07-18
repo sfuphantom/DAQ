@@ -1,5 +1,5 @@
 #pragma once
 
-#include "SnapshotService.h"
+#include "snapshotService.h"
 
-void LoggingService_LogSnapshot(const SensorSnapshot &snapshot);
+void loggingServiceLogSnapshot(const SensorSnapshot &snapshot);

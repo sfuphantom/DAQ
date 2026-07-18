@@ -1,3 +1,3 @@
 #pragma once
 
-void Runtime_StartTasks();
+void runtimeStartTasks();

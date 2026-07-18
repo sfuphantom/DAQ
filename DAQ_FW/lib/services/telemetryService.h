@@ -1,7 +1,7 @@
 #pragma once
 
-#include "SnapshotService.h"
+#include "snapshotService.h"
 
-void TelemetryService_SendWheelSpeed(float wheelSpeedKmh);
-void TelemetryService_SendKnownWheelSpeedTestPattern();
-void TelemetryService_SendSnapshotCSV(const SensorSnapshot &snapshot);
+void telemetryServiceSendWheelSpeed(float wheelSpeedKmh);
+void telemetryServiceSendKnownWheelSpeedTestPattern();
+void telemetryServiceSendSnapshotCsv(const SensorSnapshot &snapshot);

@@ -1,13 +1,11 @@
-#include "SimulatedSensors.h"
-#include "system_config.h"
+#include "simulatedSensors.h"
+#include "systemConfig.h"
 #include <math.h>
 
-namespace
-{
-    float triangleWave(uint32_t nowMs, uint32_t periodMs, float minValue, float maxValue)
-    {
-        if (periodMs == 0)
-        {
+// This file populates a SensorSnapshot and periodically injects fault conditions to test system behavior.
+namespace {
+    float triangleWave(uint32_t nowMs, uint32_t periodMs, float minValue, float maxValue){
+        if (periodMs == 0){
             return minValue;
         }
 
@@ -16,10 +14,8 @@ namespace
         return minValue + (maxValue - minValue) * ramp;
     }
 
-    float sinWave(uint32_t nowMs, uint32_t periodMs, float center, float amplitude)
-    {
-        if (periodMs == 0)
-        {
+    float sinWave(uint32_t nowMs, uint32_t periodMs, float center, float amplitude){
+        if (periodMs == 0){
             return center;
         }
 
@@ -28,8 +24,7 @@ namespace
     }
 }
 
-void SimulatedSensors_FillSnapshot(SensorSnapshot &snapshot, uint32_t nowMs)
-{
+void simulatedSensorsFillSnapshot(SensorSnapshot &snapshot, uint32_t nowMs){
     uint32_t cycleMs = nowMs % 20000UL;
     bool induceFault = cycleMs >= 12000UL && cycleMs < 16000UL;
 

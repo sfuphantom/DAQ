@@ -2,5 +2,6 @@
 
 #include <stddef.h>
 
-bool RTCService_Init();
-bool RTCService_GetBootTimestamp(char *buffer, size_t length);
+bool rtcServiceInit();
+bool rtcServiceGetBootTimestamp(char *buffer, size_t length);
+bool rtcServiceGetCurrentTimestamp(char *buffer, size_t length);
