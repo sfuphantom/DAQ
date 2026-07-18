@@ -11,10 +11,10 @@ This header provides core configuration constants and enums used throughout the 
 The `ADCAddress` enum defines the I2C addresses for each ADS1115 ADC chip.
 
 ```
-U1 → 0x48
-U2 → 0x49
-U3 → 0x4A
-U4 → 0x4B
+U1 -> 0x49
+U2 -> 0x48
+U3 -> 0x4B
+U4 -> 0x4A
 ```
 
 Use these when instantiating sensor objects to ensure each sensor communicates with the correct ADC.

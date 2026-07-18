@@ -1,7 +1,11 @@
 .venv/
+.pio-venv/
 __pycache__/
 *.pyc
+.platformio-core/
+antenna/logs/
 
 # pip freeze > requirements.txt
 # Local paths / secrets
 daq_local_config.py
+.DS_Store

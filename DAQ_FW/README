@@ -28,23 +28,26 @@ pio device monitor
 
 - `src/` application entry point
 - `lib/` firmware modules and services
-- `include/system_config.h` main configuration file
+- `include/systemConfig.h` main configuration file
 - `platformio.ini` PlatformIO environment and dependencies
 
 ## Runtime Modes
 
-Configured in [`include/system_config.h`](/Users/serafima/Developer/DAQ/DAQ_FW/include/system_config.h).
+Configured in [`include/systemConfig.h`](include/systemConfig.h).
 
 - `MODE_FULL`
   runs sensor pipeline, logging, SD logging, telemetry, and CAN
 - `MODE_CAN_ONLY`
-  runs the CAN test task without the normal sensor pipeline
+  runs the CAN test task without the normal sensor pipeline.
 - `MODE_SENSORS_ONLY`
   runs the sensor-side firmware without normal CAN traffic
 
+`CanTestTask` sends fake wheel-speed CAN messages using ID `0x200`.
+Cooling fault status uses ID `0x100` with data `0x01` when active.
+
 ## Output Flags
 
-These can be toggled independently in [`include/system_config.h`](/Users/serafima/Developer/DAQ/DAQ_FW/include/system_config.h):
+These can be toggled independently in [`include/systemConfig.h`](include/systemConfig.h):
 
 - `ENABLE_TELEMETRY_OUTPUT`
   enables UART telemetry output to the antenna link
@@ -66,16 +69,16 @@ When `ENABLE_SENSOR_SIMULATION` is set to `1`, the firmware skips real sensor se
 The simulator feeds:
 - temperatures
 - flows
-- suspension values
+- suspension voltages
 - steering angle
 - wheel speed
 
 It also injects a periodic cooling fault condition so you can validate fault handling, logs, and CAN behavior.
 
 Simulation code lives in:
-- `lib/Simulation/SimulatedSensors.cpp`
+- `lib/simulation/simulatedSensors.cpp`
 
-Recommended validation setup without hardware:
+Recommended validation setup without sensor hardware:
 
 1. Enable `ENABLE_SENSOR_SIMULATION`
 2. Choose a `SYSTEM_MODE`
@@ -110,5 +113,4 @@ Consumers read the snapshot and format it for:
 
 ## Notes
 
-- `pio` was not installed in the shell used for recent edits, so build validation was not run there.
-- If you change compile-time flags in `system_config.h`, rebuild after each config change.
+- If you change compile-time flags in `systemConfig.h`, rebuild after each config change.
