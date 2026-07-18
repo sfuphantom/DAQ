@@ -1,11 +1,116 @@
+# DAQ Firmware
 
-This directory is intended for PlatformIO Test Runner and project tests.
+ESP32-based DAQ firmware built with PlatformIO and Arduino.
 
-Unit Testing is a software testing method by which individual units of
-source code, sets of one or more MCU program modules together with associated
-control data, usage procedures, and operating procedures, are tested to
-determine whether they are fit for use. Unit testing finds problems early
-in the development cycle.
+## Tooling
 
-More information about PlatformIO Unit Testing:
-- https://docs.platformio.org/en/latest/advanced/unit-testing/index.html
+This project uses PlatformIO. The `pio` command is the PlatformIO CLI.
+
+You should install it if you want to:
+- build the firmware locally
+- upload firmware
+- run the serial monitor
+- validate config combinations without hardware
+
+Install options:
+- PlatformIO IDE extension in VS Code
+- PlatformIO Core CLI: https://docs.platformio.org/en/latest/core/installation/index.html
+
+Useful commands from `DAQ_FW/`:
+
+```sh
+pio run
+pio run -t upload
+pio device monitor
+```
+
+## Project Layout
+
+- `src/` application entry point
+- `lib/` firmware modules and services
+- `include/systemConfig.h` main configuration file
+- `platformio.ini` PlatformIO environment and dependencies
+
+## Runtime Modes
+
+Configured in [`include/systemConfig.h`](include/systemConfig.h).
+
+- `MODE_FULL`
+  runs sensor pipeline, logging, SD logging, telemetry, and CAN
+- `MODE_CAN_ONLY`
+  runs the CAN test task without the normal sensor pipeline.
+- `MODE_SENSORS_ONLY`
+  runs the sensor-side firmware without normal CAN traffic
+
+`CanTestTask` sends fake wheel-speed CAN messages using ID `0x200`.
+Cooling fault status uses ID `0x100` with data `0x01` when active.
+
+## Output Flags
+
+These can be toggled independently in [`include/systemConfig.h`](include/systemConfig.h):
+
+- `ENABLE_TELEMETRY_OUTPUT`
+  enables UART telemetry output to the antenna link
+- `ENABLE_SD_LOGGING_OUTPUT`
+  enables SD card CSV logging
+- `ENABLE_SENSOR_SIMULATION`
+  enables fake sensor data generation without hardware
+
+This lets you test combinations like:
+- antenna only
+- SD only
+- both antenna and SD
+- simulation with real outputs
+
+## Sensor Simulation
+
+When `ENABLE_SENSOR_SIMULATION` is set to `1`, the firmware skips real sensor setup and runs a simulated sensor task instead.
+
+The simulator feeds:
+- temperatures
+- flows
+- suspension voltages
+- steering angle
+- wheel speed
+
+It also injects a periodic cooling fault condition so you can validate fault handling, logs, and CAN behavior.
+
+Simulation code lives in:
+- `lib/simulation/simulatedSensors.cpp`
+
+Recommended validation setup without sensor hardware:
+
+1. Enable `ENABLE_SENSOR_SIMULATION`
+2. Choose a `SYSTEM_MODE`
+3. Enable or disable telemetry / SD outputs as needed
+4. Build with `pio run`
+5. Check serial logs, telemetry output, and/or SD CSV files
+
+## Current Sensor Architecture
+
+- Temperature sensors: ADS1115 over I2C
+- Steering angle sensor: ADS1115 over I2C
+- Suspension sensors: ADS1115 over I2C
+- Flow sensors: GPIO pulse counting with interrupts
+- Wheel speed: dedicated interrupt/timer subsystem
+
+Each physical ADS1115 chip is initialized once, and multiple logical sensors read different channels from that shared chip object.
+
+## Shared Snapshot Model
+
+The firmware uses a shared `SensorSnapshot` as the latest system state.
+
+Producer tasks update only the fields they own:
+- critical sensors update temp/flow/fault
+- wheel-speed task updates wheel-speed fields
+- chassis task updates suspension and steering
+- simulation task can populate all sensor fields
+
+Consumers read the snapshot and format it for:
+- serial logs
+- SD CSV logging
+- telemetry UART output
+
+## Notes
+
+- If you change compile-time flags in `systemConfig.h`, rebuild after each config change.

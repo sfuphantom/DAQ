@@ -1,6 +1,8 @@
 
-# Data Aquisition System (DAQ)
-The DAQ system collect, logs and transmits real-time sensor data from our vehicle to support driver safety, performance analysis, and debugging. The DAQ system interfaces with multiple analog/digital sensors and streams data over CAN to the VCU and other subsystems.  
+# Data Acquisition System (DAQ)
+**Maintainers:** Sera Ermolenko (Project Lead)
+
+The DAQ system collects, logs, displays, and transmits real-time sensor data from the vehicle to support driver safety, performance analysis, and debugging. The current ESP32-based firmware interfaces with analog and digital sensors, streams selected data over CAN to the VCU and dashboard, and sends telemetry/logging data over UART radio and SD card storage.
 
 ## Contents 
 
@@ -11,23 +13,28 @@ The DAQ system collect, logs and transmits real-time sensor data from our vehicl
 - [Firmware / Software](#firmware--software)
 - [DAQ Additional Information](#daq-additional-information)
 - [Getting Started](#getting-started)
-- [PlatformIO Setup](#platformIO--setup)
+- [PlatformIO Setup](#platformio-setup)
+- [Data Preprocessing](#data-preprocessing)
+- [Data Visualization](#data-visualization)
+- [Antenna Telemetry](#antenna-telemetry)
 - [Logic & Functionality](#logic--&--functionality)
 - [Configurations & Toggles](#configurations--&--toggles)
 - [Calibration & Procedures](#calibration--&--procedures)
-- [Additional Notes](additional--N=notes)
+- [Additional Notes](#additional-notes)
 - [Safety & FSAE Compliance](#safety--fsae-compliance)
 - [Maintainers](#maintainers)
 - [License](#license)
 
 
 ## Overview
-The purpose of the DAQ system is to enable Phantom to **monitor, log, and analyze sensor data** in real time, supporting both driver feedback** and engineering development. It consolidates analog and digital signals (temperatures, pressures, wheel speed) into standardized CAN messages. Logged data is used for post-drive analysis and compliance with Formula SAE rules. 
+The purpose of the DAQ system is to monitor, log, and analyze sensor data in real time for driver feedback and engineering development. It consolidates analog and digital signals into runtime state, CAN messages, SD CSV logs, and telemetry UART output. The system also computes a cooling fault condition and transmits that status to the VCU.
 
 **Key Features**
-- Reads analog and digital sensor signals (wheel speed, two pressure sensors, two temperature sensors, IMU).  
-- Communicates over CAN with the VCU and optionally with external loggers.
-- Supports data logging for validation, driver feedback, and debugging.  
+- Reads analog and digital sensor signals (4 wheel speed, 2 flow, 2 temperature, 1 steering angle, and 4 suspension).  
+- Communicates over CAN with the VCU and Dash.
+- Supports telemetry UART output for validation and radio transmission.
+- Supports internal SD card data logging for validation, driver feedback, and debugging.  
+- Supports sensor simulation for bench validation without attached hardware.
 - Modular firmware for easy addition of new sensors.  
 
 **Design Goals**
@@ -42,16 +49,16 @@ The purpose of the DAQ system is to enable Phantom to **monitor, log, and analyz
 ## Project Status
 
 - **Current state:** 
-- Bench-tested on ESP32 dev kits with coolant temperature, pressure, and wheel-speed sensors streaming over CAN; ready for in-car integration.
+- Bench-tested on ESP32 dev kits with CAN, telemetry/logging flow, and task-based runtime. Firmware now supports temperature, pulse-based flow, wheel speed, steering angle, suspension, SD logging, telemetry UART, and sensor simulation. Hardware validation is still required for the latest revision and wiring.
 
-- **Focus areas:** Finalize wiring harness pinout, expand calibration coverage for additional sensors, and document the warm-up/fault behavior for the VCU team.
+- **Focus areas:** Finalize wiring harness pinout, expand calibration coverage for additional sensors, and document the warm-up/fault behavior for the VCU team. Finalizing perf board for additional sensors.
     
-- **Current board/major revision:** Rev 4 (ESP32-based DAQ board)
+- **Current board/major revision:** Rev 5 (ESP32-based DAQ board)
     
-- **Last validated on:** <2025‑11‑18>
+- **Last validated on:** 2026-07-11
     
 - **Health:** 
-- Sensor bring-up, CAN messaging, and logging are stable; remaining tasks are workflow polish and extended testing.
+- Sensor bring-up, CAN messaging, and logging are stable; remaining tasks are workflow polish and extended testing. 
 
 
 ## Hardware
@@ -63,20 +70,26 @@ The purpose of the DAQ system is to enable Phantom to **monitor, log, and analyz
 
 ## Firmware / Software
 
-- **Language/SDK:** C++ with Arduino-ESP32 framework, Python for data visualization.
+- **Language/SDK:** C++ with Arduino-ESP32 framework, Python for preprocessing and visualization utilities.
     
-- **Build System:** PlatformIO (VSCode).
+- **Build System:** PlatformIO (VS Code or CLI via `pio`).
     
 - **Key Modules:** 
 | Module | Location | Purpose | Notes |
 | --- | --- | --- | --- |
-| **Main firmware** | `src/main.cpp` | Initializes hardware, enforces safety limits, and pushes CAN data. | Contains all runtime toggles for sensors, CAN IDs, and warm-up timing. |
-| **IADC Sensor drivers** | `lib/IADCSensor` | ADS1115 abstractions for coolant temperature/pressure. | `CoolantTemperatureSensor` / `CoolantPressureSensor` expose `Initialize()` + `GetData()`. |
-| **CAN (TWAI) layer** | `lib/Can` | Configures ESP32 CAN driver and transmits frames. | `CAN_Init()` validates loopback; `CAN_SendInt16()` sends packed integers. |
-| **Wheel speed** | `lib/WheelSpeed` | Captures interrupts, filters, and scales wheel-speed data. | Use `WheelSpeedReset()` + `getFinalWheelSpeed()` in `main.cpp`. |
-| **Global config** | `include/system_config.h` | Shared constants (baud rate, log level, ADS addresses). | Adjust `CURRENT_LOG_LEVEL` or `ADCAddress` mappings here. |
+| **Main firmware** | `DAQ_FW/src/main.cpp` | Initializes hardware and starts runtime tasks. | Sets up UART, CAN, SD, sensors, and watchdog. |
+| **Runtime scheduler** | `DAQ_FW/lib/runtime` | Runs FreeRTOS tasks for sensors, logging, CAN, and telemetry. | Controls task rates and mode-dependent behavior. |
+| **Sensor service** | `DAQ_FW/lib/sensors` | Aggregates critical and chassis sensors into the shared snapshot. | Uses shared ADS1115 chip objects for ADC-backed sensors. |
+| **IADC Sensor drivers** | `DAQ_FW/lib/iadcSensor` | ADS1115 abstractions for coolant temperature, steering angle, and suspension. | Logical sensors own channels, not ADC chips. |
+| **Flow pulse module** | `DAQ_FW/lib/flowPulse` | Counts Hall-effect flow pulses and converts them to L/min. | Uses GPIO interrupts and a configurable sample window. |
+| **Service layer** | `DAQ_FW/lib/services` | Snapshot state, telemetry CSV, SD logging, and fault handling. | `snapshotService` uses targeted field updates to avoid task overwrite races. |
+| **CAN (TWAI) layer** | `DAQ_FW/lib/can` | Configures ESP32 CAN driver and transmits frames. | `canInit()` validates loopback; `canSendInt16()` sends packed integers. |
+| **Wheel speed** | `DAQ_FW/lib/wheelSpeed` | Captures interrupts and computes wheel/vehicle speed. | Use `wheelSpeedReset()` + getters in runtime tasks. |
+| **Simulation** | `DAQ_FW/lib/simulation` | Generates fake sensor data for bench validation without hardware. | Drives the same snapshot/logging/telemetry pipeline as real sensors. |
+| **Global config** | `DAQ_FW/include/systemConfig.h` | Shared pins, modes, thresholds, and feature toggles. | Includes telemetry UART and flow constants. |
+| **Antenna receiver (PC)** | `antenna/telemetry_receiver.py` | Logs incoming telemetry radio CSV to timestamped files. | Reads serial port at configured baud (`57600`). |
 
-## DAQ additional Information
+## DAQ Additional Information
 Note:
 - The original DAQ project was developed in Python for the Raspberry Pi 4. 
 - Due to supply shortages, the project switched to an ESP32 microcontroller. 
@@ -84,12 +97,14 @@ Note:
 
 ## Getting Started
 1. **Clone & Open** – `git clone` the repo, open it in VS Code or your preferred editor/terminal.
-2. **Install Dependencies** – PlatformIO will pull libraries from `platformio.ini` automatically, or run `pio pkg install`.
-3. **Review Config** – Edit the defines at the top of `src/main.cpp` (sensor enables, limits, CAN IDs, `SENSOR_TEST_MODE`, `FAULT_SUPPRESS_MS`) plus any globals in `include/system_config.h`.
+2. **Install Dependencies** – PlatformIO will pull firmware libraries from `platformio.ini` automatically, or run `pio pkg install`. For Python tooling, run `pip install -r requirements.txt`.
+3. **Review Config** – Configure modes, sensor toggles, limits, and telemetry settings in `DAQ_FW/include/systemConfig.h`.
 4. **Build** – `pio run` (targets `[env:esp32dev]` by default).
 5. **Flash** – `pio run -t upload` with the ESP32 connected over USB.
-6. **Monitor** – `pio device monitor -b 115200` to view logs (`Logger::Notice/Trace/Error` output sensor snapshots and fault status).
-7. **Verify** – Watch for the init message, confirm warm-up suppression, then inject real faults to ensure `FAULT_MSG_ID` toggles as expected while wheel-speed frames continue.
+6. **Monitor** – `pio device monitor -b 115200` to view logs (`Logger::notice/trace/error` output status and snapshots).
+7. **Verify Bench Behavior** – Confirm SD init, UART telemetry init, and expected mode behavior (`MODE_FULL`, `MODE_CAN_ONLY`, or `MODE_SENSORS_ONLY`).
+8. **Optional No-Hardware Validation** – Set `ENABLE_SENSOR_SIMULATION = 1` in `DAQ_FW/include/systemConfig.h` and test telemetry / SD outputs without attached sensors.
+9. **Telemetry Receiver (PC)** – Run `python3 antenna/telemetry_receiver.py --port <PORT> --baud 57600` to capture radio telemetry CSV logs.
 
 ## PlatformIO Setup 
 ```
@@ -100,81 +115,168 @@ pio device monitor -b 115200    # serial monitor (matches BAUD_RATE)
 ```
 - Environment: `[env:esp32dev]` in `platformio.ini`.
 - Dependencies: ArduinoLog, Adafruit ADS1X15, SPI, LSM6DS, Unified Sensor (auto-resolved by PlatformIO).
-- Serial monitor uses the baud defined in `include/system_config.h` (`BAUD_RATE = 115200`).
+- Serial monitor uses the baud defined in `include/systemConfig.h` (`BAUD_RATE = 115200`).
 
 **Prerequisites**
-- ESP32 dev board wired to ADS1115 modules, coolant sensors, wheel-speed sensors, and CAN transceiver (TX = GPIO4, RX = GPIO5).
+- ESP32 dev board wired to ADS1115 modules, coolant sensors, wheel-speed sensors, flow pulse inputs, and CAN transceiver (TX = GPIO4, RX = GPIO5).
 - PlatformIO Core (`pip install platformio`) or VS Code with the PlatformIO IDE extension.
 - USB cable for flashing and serial monitoring.
 - Access to the vehicle CAN bus or a bench CAN interface for testing.
 
+## Data Preprocessing
+- Location: `daq_data_preprocessing/preprocessing.py`
+- Purpose: takes CSV logs from SD card `unprocessed/`, normalizes timeline, filters outliers, fills short gaps, and writes cleaned files into the processed directory.
+
+Install Python dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+Run:
+```bash
+python3 daq_data_preprocessing/preprocessing.py /path/to/SD
+```
+
+Notes:
+- Requires `DRIVE_ROOT` in `daq_local_config.py`.
+- Expects source logs at `<SD>/unprocessed`.
+- Moves original CSV files to `processed/raw` after processing.
+
+## Data Visualization
+- Location: `daq_data_visualization/visualization.py`
+- Purpose: generates run summaries and plots (speed, flow, temperature, suspension, correlation heatmaps) from processed CSV files.
+
+Run with real processed data:
+```bash
+python3 daq_data_visualization/visualization.py
+```
+
+Run with simulated data:
+```bash
+python3 daq_data_visualization/visualization.py --simulate
+```
+
+Notes:
+- Uses `daq_data_visualization/sim_test.py` for simulation mode.
+- Writes outputs under `processed/plots` and `processed/summaries` (or `daq_data_visualization/test_data` in simulation mode).
+
+## Antenna Telemetry
+- Location: `antenna/telemetry_receiver.py`
+- Purpose: receives telemetry CSV over serial from the 915 MHz telemetry radio link and saves timestamped log files.
+
+Install Python dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+Run:
+```bash
+python3 antenna/telemetry_receiver.py --port COM7 --baud 57600
+```
+
+Notes:
+- Default output directory: `antenna/logs`.
+- Telemetry CSV format currently includes:
+  `critical_timestamp_ms,chassis_timestamp_ms,wheel_speed_timestamp_ms,temp1_c,temp2_c,flow1_lpm,flow2_lpm,susp1,susp2,susp3,susp4,steering_angle_deg,speed_kmh`
+- For firmware-side streaming, use `SYSTEM_MODE = MODE_FULL`.
 
 
 ## Logic & Functionality
-1. **Setup Path (`setup()` in `src/main.cpp`)**
-   - Starts Serial/I²C, logger, and CAN (`CAN_Init()` loops back a test frame).
-   - Initializes each enabled sensor (based on `ENABLE_*` macros).
-   - Sends an **initialization CAN frame** on `FAULT_MSG_ID` with value `0` when `SENSOR_TEST_MODE` is `0`, so the VCU knows the DAQ is alive.
-   - Records `startupTime` for the warm-up buffer defined by `FAULT_SUPPRESS_MS`.
+1. **Setup Path (`DAQ_FW/src/main.cpp`)**
+   - Starts Serial, I2C, SPI, logger, SD logging, telemetry UART, and CAN (when enabled by mode/flags).
+   - Initializes enabled real sensors through `sensorServiceInit()` when simulation is off.
+   - Initializes fault service and starts FreeRTOS tasks via `runtimeStartTasks()`.
+   - Sends a startup cooling fault status frame (`CoolingFault = 0`) when CAN is enabled.
 
-2. **Main Loop (`loop()` in `src/main.cpp`)**
-   - Reads all enabled coolant sensors and wheel-speed data every iteration.
-   - Logs a sensor snapshot once per second (`logSensorSnapshot()`).
-   - Evaluates safety limits with `valueOutOfRange()`; faults are gated until `(millis() - startupTime) >= FAULT_SUPPRESS_MS`.
-   - When a fault is active, logs it once and keeps transmitting `CAN_SendInt16(FAULT_MSG_ID, 1)` until readings recover; recovery logs a notice.
-   - Resets wheel-speed capture, scales the filtered speed by 100, and pushes it on `WHEEL_MSG_ID`.
+2. **Task-Based Runtime (`DAQ_FW/lib/runtime/taskScheduler.cpp`)**
+   - `CriticalSensorsTask` reads temperature/flow sensors and evaluates fault state.
+   - `WheelSpeedTask` updates wheel speed values and transmits CAN wheel speed when enabled.
+   - `ChassisSensorsTask` reads suspension and steering channels.
+   - `LoggerTask` prints snapshots and appends SD logs when enabled.
+   - `TelemetryTask` streams CSV snapshots over telemetry UART when enabled.
+   - `SimulatedSensorsTask` can replace the real sensor tasks with generated data.
 
-3. **Edge Modes**
-   - `SENSOR_TEST_MODE == 1`: loop exits after logging, so no CAN traffic (safe for dry bench wiring).
-   - `SENSOR_TEST_MODE == 0`: full behavior; initialization frame, warm-up buffer, fault logic, and wheel-speed CAN output are all active.
+3. **Fault Behavior (`DAQ_FW/lib/services/faultService.cpp`)**
+   - Uses warm-up suppression and debounce timers before asserting a fault.
+   - Checks flow and temperature against configured min/max bounds.
+   - Transmits `CoolingFault` CAN status (`0`/`1`) when CAN is enabled.
+
+4. **Shared Snapshot Model (`DAQ_FW/lib/services/snapshotService.cpp`)**
+   - Producer tasks update only the fields they own instead of overwriting the entire snapshot.
+   - Logging, SD logging, and telemetry consume the shared latest-value state.
 
 ## Configurations & Toggles 
-(in `src/main.cpp`)
-- `SENSOR_TEST_MODE` – `1` disables CAN/faults; `0` is production behavior.
-- Sensor toggles (`ENABLE_TEMP_SENSOR_1/2`, `ENABLE_PRESSURE_SENSOR_1/2`) – set to `1` for any wired channel; disabled sensors return `NAN` so they’re ignored.
-- Safety bounds (`MAX_TEMP_1`, `MAX_TEMP_2`, `MIN_TEMP`, `MIN_PRESSURE`, `MAX_PRESSURE`) – adjust per calibration results.
-- `FAULT_SUPPRESS_MS` – warm-up duration (default 3000 ms). Increase if sensors need longer to stabilize when the DAQ powers up before the cooling loop.
-- CAN IDs (`FAULT_MSG_ID`, `WHEEL_MSG_ID`) – coordinate with the VCU team before changing.
-- Wheel-speed scaling lives in `sendWheelSpeed()`: values are multiplied by 100 before sending and must be divided back out on the dash/VCU side.
+(in `DAQ_FW/include/systemConfig.h`)
+- `SYSTEM_MODE` (`MODE_FULL`, `MODE_CAN_ONLY`, `MODE_SENSORS_ONLY`) controls which subsystems run.
+- `ENABLE_SENSOR_SIMULATION` swaps real sensor acquisition for generated data.
+- `ENABLE_TELEMETRY_OUTPUT` and `ENABLE_SD_LOGGING_OUTPUT` allow antenna and SD validation independently.
+- Sensor toggles (`ENABLE_TEMP_SENSOR_*`, `ENABLE_FLOW_SENSOR_*`, `ENABLE_SUSP_SENSOR_*`, `ENABLE_WHEEL_SPEED_SENSORS`) control active channels.
+- Safety bounds (`MAX_TEMP_1`, `MAX_TEMP_2`, `MIN_TEMP`, `MIN_FLOW_LPM`, `MAX_FLOW_LPM`) define fault thresholds.
+- Telemetry settings (`TELEMETRY_UART`, `TELEMETRY_TX_PIN`, `TELEMETRY_RX_PIN`, `TELEMETRY_BAUD`, `TELEMETRY_PERIOD_MS`) configure the radio serial link.
+- Flow conversion constants (`FLOW_SENSOR_HZ_PER_LPM`, `FLOW_SENSOR_SAMPLE_WINDOW_MS`, `FLOW_SENSOR_*_PIN`) tune pulse-based flow-rate math.
+- CAN pins and message IDs (`CAN_TX_PIN`, `CAN_RX_PIN`, `CANMessageId`) should only be changed in sync with VCU expectations.
 
-> Keep these defines near the top of `src/main.cpp` so newcomers can review them before flashing firmware.
+> Keep `systemConfig.h` aligned with the actual harness wiring and calibration sheet before flashing.
 
 ## Calibration & Procedures
 1. **Sensor Verification**
-   - Enable one channel at a time using the `ENABLE_*` macros.
-   - Use `pio device monitor -b 115200` to confirm raw readings are stable.
-   - Tune `MAX_TEMP_*`/`MIN/MAX_PRESSURE` after comparing with a trusted gauge.
+   - Enable one channel at a time with `ENABLE_*` toggles.
+   - Use `pio device monitor -b 115200` to confirm stable values and no ADC init errors.
+   - Tune `MAX_TEMP_*` and `MIN/MAX_FLOW_LPM` against trusted references.
+   - For flow sensors, verify pulse polarity, pull-up voltage, and `FLOW_SENSOR_HZ_PER_LPM` against the actual sensor.
 
 2. **Warm-Up Buffer Check**
-   - With sensors cold, boot the DAQ and confirm only the initialization CAN frame is sent for the first `FAULT_SUPPRESS_MS`.
-   - After warm-up, force a known out-of-range value (e.g., unplug a sensor) to ensure `FAULT_MSG_ID` payload `1` repeats until recovery.
+   - With cold sensors, boot DAQ and confirm no immediate fault assertion during warm-up.
+   - After warm-up, force a known out-of-range value and confirm `CoolingFault` transitions high.
+   - Restore normal conditions and confirm fault clears.
 
 3. **Wheel-Speed Validation**
-   - Spin the wheel sensor manually, verify `getFinalWheelSpeed()` outputs expected values, and confirm `WHEEL_MSG_ID` frames update accordingly.
+   - Spin wheel inputs manually and verify wheel speed values update and CAN wheel-speed messages transmit when enabled.
 
-4. **In-Car Procedure**
-   - Ensure the cooling system is already circulating (or adjust `FAULT_SUPPRESS_MS`) so false faults don’t trigger when the DAQ powers up.
-   - Coordinate with the VCU/dash teams so they expect the startup `FAULT_MSG_ID` = 0 frame.
+4. **Telemetry Radio Validation**
+   - Set `SYSTEM_MODE` to `MODE_FULL` and run `antenna/telemetry_receiver.py` on the PC.
+   - Confirm steady CSV reception at expected rate (`TELEMETRY_PERIOD_MS`), with valid field count and timestamps.
+   - Verify radio link quality at increasing distance before dynamic testing.
+
+5. **No-Hardware Validation**
+   - Set `ENABLE_SENSOR_SIMULATION = 1`.
+   - Use `ENABLE_TELEMETRY_OUTPUT` / `ENABLE_SD_LOGGING_OUTPUT` to test antenna-only, SD-only, or both.
+   - Validate console logs, CSV formatting, CAN behavior, and fault transitions without attached sensors.
+
+6. **In-Car Procedure**
+   - Ensure coolant is circulating before enabling strict fault thresholds.
+   - Coordinate expected CAN IDs and startup behavior with VCU/dash teams.
+   - Record both SD and radio telemetry for first integration runs.
 
 ## Additional Notes
-- Keep `SENSOR_TEST_MODE` at `1` when doing dry testing without the cooling loop; remember to flip it back to `0` before any CAN validation or on-car run.
-- When adding sensors, instantiate new objects alongside the existing ones in `src/main.cpp`, assign the proper ADS channel/`ADCAddress`, and extend the limit checks if needed.
-- Share any calibration offsets or wiring changes with the team so this README stays accurate.
+- For antenna-only or SD-only bench tests, use `ENABLE_TELEMETRY_OUTPUT` / `ENABLE_SD_LOGGING_OUTPUT` in addition to `SYSTEM_MODE`.
+- Flow sensing is now pulse-based via GPIO interrupts, not ADC voltage-to-frequency conversion.
+- When adding sensors, extend `sensorService`, `snapshotService`, logging/telemetry serializers, and visualization schema together.
+- Share wiring and calibration updates with the team so this README and config remain accurate.
 
 ## Safety & FSAE Compliance
 - **EV.7.1.4** – BMS, IMD, and BSPD must each have independent circuits capable of opening the shutdown system.  
 - **EV.4.6** – Series-provided energy meter must monitor TS voltage/current. DAQ supplements this by logging additional sensor data for analysis.  
 - **Accumulator monitoring** – At least one temperature sensor required inside the accumulator; DAQ can optionally mirror these values.  
 - **Wheel speed (T.11.x)** – Required for scrutineering; DAQ measures and provides wheel speed data to the dashboard and logs for inspection.  
-- **Cooling system monitoring** – While not explicitly mandated, DAQ logs coolant pressure/temperature and raises fault signals to the VCU to protect HV components.  
+- **Cooling system monitoring** – While not explicitly mandated, DAQ logs coolant flow/temperature and raises fault signals to the VCU to protect HV components.  
 
 ## Maintainers
 
-**Lead:** Sera
-**Members:** Andrew, Igor 
+**Current Project Lead:** Sera Ermolenko
 
-**Previous Lead:** Raf
-**Previous Members:** Lona, Ethan
+## Contributors & Credits
+- **Sera Ermolenko (2025-2026 major revision):** Authored RTOS/task-based firmware architecture (`runtime/services/sensors`), firmware addition and testing of 4 suspension sensors, steering angle sensor, two flow sensors, revision of wheel-speed sensors and temperature sensors, active CAN implementation and integration/testing, telemetry antenna integration, SD card integration, preprocessing pipeline, and visualization pipeline.
+
+- **Amraz (2025-2026 major hardware revision):**
+- Hardware workaround with perf board
+
+**Old revision History**
+- **Sera:** Coolant and temperature sensors (later rewritten and replaced with flow sensors)
+- **Igor:** Hardware rev3 re-design.
+- **Ritesh:** Hardware rev2 design (later rewritten in current revision).
+- **Andrew:** Legacy CAN driver implementation and IAD sensor class.
+- **Lona:** Earlier wheel-speed implementation (later rewritten in current revision).
 
 ## License
 Licensed under the [MIT License](./LICENSE).
